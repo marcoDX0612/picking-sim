@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ピッキング＆出荷実技シミュレーター（iPadインラインカメラ対応・PC/スマホ縦横両対応）</title>
+  <title>ピッキング＆出荷実技シミュレーター（系統選択・iPadインラインカメラ・PC/スマホ縦横両対応）</title>
   <style>
     :root {
       --bg-color: #f1f5f9;
@@ -52,24 +52,24 @@
       justify-content: space-between;
       align-items: center;
       background: #ffffff;
-      padding: 8px 14px;
+      padding: 7px 14px;
       border-radius: 6px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
       border: 1px solid #e2e8f0;
       flex-shrink: 0;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
     .header-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
     }
 
     .header-left h1 {
-      font-size: 1.02rem;
+      font-size: 0.98rem;
       font-weight: 700;
       color: #1e293b;
     }
@@ -83,10 +83,10 @@
     }
 
     .nav-tab {
-      padding: 5px 12px;
+      padding: 5px 11px;
       border: none;
       border-radius: 4px;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
       background: transparent;
@@ -102,24 +102,68 @@
     .control-group {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
+    }
+
+    /* 複数系統選択トグルチップ群 */
+    .cat-toggle-bar {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: #f8fafc;
+      padding: 3px 5px;
+      border-radius: 5px;
+      border: 1px solid #cbd5e1;
+      flex-wrap: wrap;
+    }
+
+    .cat-chip {
+      padding: 4px 7px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1.5px solid #cbd5e1;
+      background: #ffffff;
+      color: #64748b;
+      transition: all 0.12s;
+    }
+
+    .cat-chip.selected {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .cat-chip-all {
+      padding: 4px 7px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid #94a3b8;
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+    .cat-chip-all:hover {
+      background: #cbd5e1;
     }
 
     .stepper {
       display: flex;
       align-items: center;
       gap: 4px;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 600;
       color: #334155;
     }
 
     .stepper input {
-      width: 44px;
+      width: 42px;
       text-align: center;
       padding: 3px 0;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: bold;
       border: 1px solid var(--border-color);
       border-radius: 4px;
@@ -128,8 +172,8 @@
     }
 
     .btn-step {
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -142,15 +186,15 @@
     .btn-step:hover { background: #e2e8f0; }
 
     button.btn {
-      padding: 6px 12px;
+      padding: 6px 11px;
       border: none;
       border-radius: 5px;
       font-weight: 700;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
       transition: background 0.15s;
     }
 
@@ -424,7 +468,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.86rem;
+      font-size: 0.85rem;
       font-weight: 700;
       color: #334155;
       flex-shrink: 0;
@@ -437,7 +481,7 @@
       border-bottom: 1px solid #fde68a;
       color: #92400e;
       padding: 6px 14px;
-      font-size: 0.8rem;
+      font-size: 0.79rem;
       font-weight: 700;
       display: none;
       justify-content: space-between;
@@ -1278,14 +1322,26 @@
     </div>
 
     <div class="control-group" id="simControls">
+      <!-- 出題系統の複数選択チェックボックス（問題再生成ボタンで反映） -->
+      <div class="cat-toggle-bar" title="指示書に出題したい系統を複数選択し、「問題再生成」を押してください">
+        <button type="button" class="cat-chip selected" id="simChip_A" onclick="toggleSimCategory('A'); this.blur();">✓ A系統</button>
+        <button type="button" class="cat-chip selected" id="simChip_B" onclick="toggleSimCategory('B'); this.blur();">✓ B系統</button>
+        <button type="button" class="cat-chip selected" id="simChip_C" onclick="toggleSimCategory('C'); this.blur();">✓ C系統</button>
+        <button type="button" class="cat-chip selected" id="simChip_D" onclick="toggleSimCategory('D'); this.blur();">✓ D系統</button>
+        <button type="button" class="cat-chip selected" id="simChip_E" onclick="toggleSimCategory('E'); this.blur();">✓ E系統</button>
+        <button type="button" class="cat-chip selected" id="simChip_F" onclick="toggleSimCategory('F'); this.blur();">✓ F系統</button>
+        <button type="button" class="cat-chip selected" id="simChip_OTHER" onclick="toggleSimCategory('OTHER'); this.blur();">✓ その他</button>
+        <button type="button" class="cat-chip-all" onclick="selectAllSimCategories(); this.blur();">全選択</button>
+      </div>
+
       <div class="stepper">
         <span>出題数:</span>
         <button class="btn-step" onclick="changeOrderCount(-1); this.blur();">-</button>
         <input type="number" id="orderCountInput" value="10" min="1" max="50" onchange="resetSimulation(); this.blur();">
         <button class="btn-step" onclick="changeOrderCount(1); this.blur();">+</button>
       </div>
-      <button class="btn btn-outline" onclick="resetSimulation(); this.blur();">問題再生成</button>
-      <button class="btn btn-warning" onclick="toggleSyncScanMode(); this.blur();" id="btnToggleSync">📲 他PCマスターQR読込</button>
+      <button class="btn btn-warning" onclick="resetSimulation(); this.blur();" title="選択中の系統・出題数で新しい指示書を生成">🔄 問題再生成</button>
+      <button class="btn btn-outline" onclick="toggleSyncScanMode(); this.blur();" id="btnToggleSync">📲 他PCマスターQR読込</button>
       <button class="btn btn-outline" onclick="toggleFullScreen(); this.blur();">⛶ 全画面</button>
     </div>
   </header>
@@ -1356,7 +1412,7 @@
 
     <div class="board-column">
       <div class="board-header">
-        <span id="boardHeaderTitle">出荷指示リスト（印刷済保有枚数以内から出題・手元カード不足なし）</span>
+        <span id="boardHeaderTitle">出荷指示リスト（選択系統の印刷済保有枚数以内から出題）</span>
         <span id="progressSummary">ピッキング: 0/10 ｜ 出荷検品: 0/10</span>
       </div>
       <div class="unprinted-alert-bar" id="unprintedAlertBar">
@@ -2154,11 +2210,14 @@
   })();
 
   /* ============================================================================
-     3. 全6系統（A〜F）完全架空マスター＆系統別種類数・印刷済み保有枚数上限管理
+     3. 全6系統（A〜F）＋その他 複数選択 ＆ マスター保有枚数上限管理
      ============================================================================ */
   const STORAGE_KEY_MASTER = 'picking_sim_master_v5_catkinds';
   const STORAGE_KEY_COPIES = 'picking_sim_copies_v2';
   const STORAGE_KEY_TIMER_MODE = 'picking_sim_secret_timer_mode';
+
+  const ALL_SIM_CATEGORIES = ['A', 'B', 'C', 'D', 'E', 'F', 'OTHER'];
+  let selectedSimCategories = new Set(ALL_SIM_CATEGORIES);
 
   const CATEGORY_NAMES = {
     A: '系統A：6桁-4桁',
@@ -2169,6 +2228,34 @@
     F: '系統F：英字3-数字5',
     OTHER: 'その他・自由入力'
   };
+
+  function toggleSimCategory(cat) {
+    if (selectedSimCategories.has(cat)) {
+      if (selectedSimCategories.size <= 1) {
+        return; // 最低1系統は必ず選択状態を維持
+      }
+      selectedSimCategories.delete(cat);
+    } else {
+      selectedSimCategories.add(cat);
+    }
+    updateSimCategoryChipUI();
+  }
+
+  function selectAllSimCategories() {
+    selectedSimCategories = new Set(ALL_SIM_CATEGORIES);
+    updateSimCategoryChipUI();
+  }
+
+  function updateSimCategoryChipUI() {
+    ALL_SIM_CATEGORIES.forEach(cat => {
+      const btn = document.getElementById(`simChip_${cat}`);
+      if (!btn) return;
+      const isSel = selectedSimCategories.has(cat);
+      btn.classList.toggle('selected', isSel);
+      const label = cat === 'OTHER' ? 'その他' : `${cat}系統`;
+      btn.textContent = `${isSel ? '✓ ' : ''}${label}`;
+    });
+  }
 
   function detectCategory(code) {
     const s = code.trim().toUpperCase();
@@ -2400,7 +2487,7 @@
   }
 
   /* ============================================================================
-     5. タブ切替・実技シミュレーション進行制御（印刷済み保有枚数上限保証）
+     5. タブ切替・実技シミュレーション進行制御（選択系統＆印刷済み保有枚数上限保証）
      ============================================================================ */
   function switchTab(tab) {
     if (currentPhase === 'sync' && tab !== 'sim') {
@@ -2455,9 +2542,14 @@
     }
     let reqCount = Math.max(1, Math.min(50, parseInt(document.getElementById('orderCountInput').value) || 10));
 
+    // 選択された系統に属し、かつ「印刷済（保有枚数1枚以上）」の部品だけを抽出
+    const activeCatList = ALL_SIM_CATEGORIES.filter(c => selectedSimCategories.has(c));
     const availableDeck = [];
     let printedKindsCount = 0;
+
     masterItems.forEach(item => {
+      const cat = item.category || detectCategory(item.code);
+      if (!selectedSimCategories.has(cat)) return;
       if (item.printed && item.copies > 0) {
         printedKindsCount++;
         const cap = Math.min(50, Math.floor(item.copies));
@@ -2467,9 +2559,21 @@
       }
     });
 
+    const catLabelStr = activeCatList.length === ALL_SIM_CATEGORIES.length
+      ? '全系統'
+      : activeCatList.map(c => c === 'OTHER' ? 'その他' : `${c}`).join('・') + '系統';
+
     if (availableDeck.length === 0) {
-      masterItems.forEach(item => availableDeck.push(item.code));
-      printedKindsCount = masterItems.length;
+      // 選択した系統に印刷済カードが1枚もない場合のフォールバック＆注意喚起
+      const fallbackItems = masterItems.filter(item => selectedSimCategories.has(item.category || detectCategory(item.code)));
+      if (fallbackItems.length > 0) {
+        fallbackItems.forEach(item => availableDeck.push(item.code));
+        printedKindsCount = fallbackItems.length;
+      } else {
+        masterItems.forEach(item => availableDeck.push(item.code));
+        printedKindsCount = masterItems.length;
+      }
+      alert(`選択した系統（${catLabelStr}）に「印刷済（保有1枚以上）」の現品票がありません。\n「現品票マスター管理・印刷」画面で保有枚数を設定するか、印刷を実行してください。`);
     }
 
     for (let i = availableDeck.length - 1; i > 0; i--) {
@@ -2495,7 +2599,7 @@
     lastCode = null;
     document.getElementById('lastScannedText').textContent = '---';
     document.getElementById('boardHeaderTitle').textContent =
-      `出荷指示リスト（印刷済 ${printedKindsCount}種 / 総保有 ${availableDeck.length}枚以内から出題）`;
+      `出荷指示リスト（対象: ${catLabelStr} ｜ 印刷済 ${printedKindsCount}種・総保有 ${availableDeck.length}枚以内）`;
 
     updateUnprintedAlertBar();
     updatePhaseUI();
@@ -3475,6 +3579,7 @@
       }
     } catch (e) {}
 
+    updateSimCategoryChipUI();
     await populateCameras();
     resetSimulation();
   };

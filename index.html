@@ -1,0 +1,3484 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ピッキング＆出荷実技シミュレーター（iPadインラインカメラ対応・PC/スマホ縦横両対応）</title>
+  <style>
+    :root {
+      --bg-color: #f1f5f9;
+      --panel-bg: #ffffff;
+      --border-color: #cbd5e1;
+      --primary: #1e3a8a;
+      --primary-hover: #172554;
+      --shipping: #b45309;
+      --shipping-hover: #92400e;
+      --success: #15803d;
+      --danger: #b91c1c;
+      --warning: #d97706;
+      --text: #0f172a;
+      --label-font: "Consolas", "Courier New", "Menlo", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text);
+    }
+
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      padding: 8px 14px;
+      gap: 8px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      padding: 8px 14px;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 1px solid #e2e8f0;
+      flex-shrink: 0;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .header-left h1 {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .nav-tabs {
+      display: flex;
+      background: #e2e8f0;
+      padding: 3px;
+      border-radius: 6px;
+      gap: 3px;
+    }
+
+    .nav-tab {
+      padding: 5px 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: transparent;
+      color: #475569;
+    }
+
+    .nav-tab.active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .stepper input {
+      width: 44px;
+      text-align: center;
+      padding: 3px 0;
+      font-size: 0.9rem;
+      font-weight: bold;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      outline: none;
+      font-family: var(--label-font);
+    }
+
+    .btn-step {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border-color);
+      background: #f8fafc;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-step:hover { background: #e2e8f0; }
+
+    button.btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.15s;
+    }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-shipping { background: var(--shipping); color: #fff; }
+    .btn-shipping:hover { background: var(--shipping-hover); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { background: #166534; }
+    .btn-warning { background: var(--warning); color: #fff; }
+    .btn-warning:hover { background: #b45309; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { background: #991b1b; }
+    .btn-outline { background: #ffffff; border: 1px solid var(--border-color); color: #334155; }
+    .btn-outline:hover { background: #f8fafc; }
+
+    /* ================= 裏モード：タイム計測バー（Alt+Tで切替） ================= */
+    .secret-timer-bar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: 1.5px solid #38bdf8;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+      flex-shrink: 0;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .secret-timer-bar.visible {
+      display: flex;
+    }
+
+    .timer-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .timer-badge {
+      background: #0284c7;
+      color: #ffffff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .timer-display {
+      font-family: var(--label-font);
+      font-feature-settings: "zero" 1;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: 1px;
+      min-width: 115px;
+    }
+
+    .timer-display.running { color: #4ade80; }
+    .timer-display.stopped { color: #fbbf24; }
+
+    .timer-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ================= 実技シミュレーター画面（PC標準レイアウト） ================= */
+    #simView {
+      display: flex;
+      flex: 1;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .camera-column {
+      width: 390px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    .phase-banner {
+      padding: 10px 14px;
+      border-radius: 6px;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .phase-banner.phase-picking { background: linear-gradient(135deg, #1e3a8a, #2563eb); }
+    .phase-banner.phase-shipping { background: linear-gradient(135deg, #92400e, #d97706); }
+    .phase-banner.phase-result { background: linear-gradient(135deg, #065f46, #059669); }
+    .phase-banner.phase-sync { background: linear-gradient(135deg, #4c1d95, #7c3aed); }
+
+    .phase-title {
+      font-size: 1.02rem;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .phase-sub {
+      font-size: 0.77rem;
+      opacity: 0.94;
+    }
+
+    .camera-card {
+      flex: 1;
+      background: #0f172a;
+      border-radius: 6px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    .camera-toolbar {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .camera-toolbar select {
+      flex: 1;
+      min-width: 120px;
+      padding: 5px 8px;
+      border-radius: 4px;
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      font-size: 0.8rem;
+    }
+
+    .video-box {
+      position: relative;
+      flex: 1;
+      background: #000000;
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 150px;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    /* iOS Safari / WebKit のネイティブ動画コントロール・全画面ボタンを非表示化 */
+    video::-webkit-media-controls,
+    video::-webkit-media-controls-enclosure,
+    video::-webkit-media-controls-panel,
+    video::-webkit-media-controls-play-button,
+    video::-webkit-media-controls-start-playback-button {
+      display: none !important;
+      -webkit-appearance: none !important;
+      opacity: 0 !important;
+    }
+
+    video.mirrored {
+      transform: scaleX(-1);
+    }
+
+    .scan-reticle {
+      position: absolute;
+      width: 190px;
+      height: 190px;
+      border: 3px solid #38bdf8;
+      border-radius: 10px;
+      box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.82);
+      pointer-events: none;
+      transition: border-color 0.15s, transform 0.15s;
+      z-index: 2;
+    }
+
+    .scan-reticle.scanned {
+      border-color: #22c55e;
+      transform: scale(1.06);
+    }
+
+    .scan-reticle.cooldown {
+      border-color: #f59e0b;
+    }
+
+    .scan-readout {
+      background: #1e293b;
+      border-radius: 4px;
+      padding: 8px 10px;
+      color: #f8fafc;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      gap: 8px;
+    }
+
+    .scan-readout-code {
+      font-family: var(--label-font);
+      font-feature-settings: "zero" 1;
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: #4ade80;
+      flex-shrink: 0;
+    }
+
+    .action-box {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-huge {
+      width: 100%;
+      padding: 12px;
+      font-size: 0.96rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+    }
+
+    .key-hint {
+      font-size: 0.74rem;
+      color: #64748b;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .board-column {
+      flex: 1;
+      background: #ffffff;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .board-header {
+      padding: 8px 14px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: #334155;
+      flex-shrink: 0;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .unprinted-alert-bar {
+      background: #fffbeb;
+      border-bottom: 1px solid #fde68a;
+      color: #92400e;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .board-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 8px;
+      align-content: start;
+    }
+
+    .order-slot {
+      position: relative;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 5px;
+      background: #ffffff;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-height: 62px;
+      justify-content: center;
+    }
+
+    .order-slot-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slot-index {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    .slot-target-no {
+      font-family: var(--label-font);
+      font-feature-settings: "zero" 1;
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: #0f172a;
+      flex: 1;
+      word-break: break-all;
+    }
+
+    .stage-badges {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .badge-stage {
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #94a3b8;
+    }
+
+    .badge-stage.done-pick {
+      background: #dbeafe;
+      border-color: #3b82f6;
+      color: #1e40af;
+    }
+
+    .badge-stage.done-ship {
+      background: #fef3c7;
+      border-color: #f59e0b;
+      color: #92400e;
+    }
+
+    .order-slot.correct {
+      border: 2px solid var(--success);
+      background: #f0fdf4;
+    }
+
+    .order-slot.wrong {
+      border: 2px solid var(--danger);
+      background: #fef2f2;
+    }
+
+    .judge-mark {
+      font-size: 1.25rem;
+      font-weight: 900;
+    }
+    .order-slot.correct .judge-mark { color: var(--success); }
+    .order-slot.wrong .judge-mark { color: var(--danger); }
+
+    .error-detail {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--danger);
+      font-family: var(--label-font);
+      font-feature-settings: "zero" 1;
+      border-top: 1px dashed #fca5a5;
+      padding-top: 4px;
+    }
+
+    .extra-scans-area {
+      grid-column: 1 / -1;
+      background: #fef2f2;
+      border: 1.5px solid #f87171;
+      border-radius: 5px;
+      padding: 8px 12px;
+      display: none;
+    }
+
+    .extra-scans-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--danger);
+      margin-bottom: 4px;
+    }
+
+    .extra-scans-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .extra-chip {
+      font-family: var(--label-font);
+      font-feature-settings: "zero" 1;
+      font-size: 0.85rem;
+      font-weight: 700;
+      background: #ffffff;
+      border: 1px solid #ef4444;
+      color: #b91c1c;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    /* ================= マスターQR同期パネル（他PC読込用） ================= */
+    .sync-progress-box {
+      grid-column: 1 / -1;
+      background: #f5f3ff;
+      border: 2px solid #8b5cf6;
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sync-chunks-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .sync-chunk-badge {
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      border: 1.5px solid #c4b5fd;
+      background: #ffffff;
+      color: #6d28d9;
+    }
+
+    .sync-chunk-badge.loaded {
+      background: #15803d;
+      border-color: #15803d;
+      color: #ffffff;
+    }
+
+    /* ================= 印刷マスター準備画面 ================= */
+    #printView {
+      display: none;
+      flex: 1;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .master-sidebar {
+      width: 455px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+    }
+
+    .master-sidebar h2 {
+      font-size: 0.94rem;
+      color: #1e293b;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .save-badge {
+      font-size: 0.72rem;
+      background: #dcfce7;
+      color: #15803d;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .cat-count-panel {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .cat-count-title {
+      font-size: 0.73rem;
+      font-weight: 800;
+      color: #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cat-count-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+
+    .cat-count-cell {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 3px 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.73rem;
+      font-weight: 700;
+    }
+
+    .cat-count-val {
+      font-family: var(--label-font);
+      color: #1e3a8a;
+      font-weight: 800;
+    }
+
+    .filter-panel {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      padding: 7px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .filter-row select {
+      flex: 1;
+      padding: 4px 6px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 0.79rem;
+      font-weight: 600;
+      background: #ffffff;
+    }
+
+    .status-tabs {
+      display: flex;
+      gap: 4px;
+    }
+
+    .status-tab-btn {
+      flex: 1;
+      padding: 4px 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #475569;
+      cursor: pointer;
+    }
+
+    .status-tab-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .master-list-box {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 5px;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 110px;
+    }
+
+    .master-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      padding: 4px 7px;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      gap: 5px;
+    }
+
+    .item-left-info {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .item-part-code {
+      font-family: var(--label-font);
+      font-feature-settings: "zero" 1;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: #0f172a;
+      word-break: break-all;
+    }
+
+    .item-cat-label {
+      font-size: 0.65rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .item-stock-ctrl {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: #f1f5f9;
+      padding: 2px 4px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .mini-step-btn {
+      width: 19px;
+      height: 19px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 3px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mini-step-btn:hover { background: #e2e8f0; }
+
+    .stock-count-text {
+      font-family: var(--label-font);
+      font-size: 0.73rem;
+      font-weight: 800;
+      color: #1e293b;
+      min-width: 33px;
+      text-align: center;
+    }
+
+    .print-status-pill {
+      font-size: 0.67rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 10px;
+      cursor: pointer;
+      border: none;
+      flex-shrink: 0;
+    }
+
+    .pill-printed {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .pill-unprinted {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #f59e0b;
+    }
+
+    .print-preview-scroll {
+      flex: 1;
+      overflow-y: auto;
+      background: #cbd5e1;
+      padding: 16px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .a4-page {
+      width: 210mm;
+      min-height: 297mm;
+      background: #ffffff;
+      padding: 10mm;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-auto-rows: 42mm;
+      gap: 4mm;
+      flex-shrink: 0;
+    }
+
+    .kanban-card {
+      border: 1.5px solid #000000;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 3mm 4mm;
+      position: relative;
+      background: #ffffff;
+    }
+
+    .kanban-card::after {
+      content: "";
+      position: absolute;
+      top: -2.2mm;
+      left: -2.2mm;
+      right: -2.2mm;
+      bottom: -2.2mm;
+      border: 0.5pt dashed #94a3b8;
+      pointer-events: none;
+    }
+
+    .card-top-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #000000;
+      padding-bottom: 1.5mm;
+      font-size: 7.5pt;
+      font-weight: 700;
+    }
+
+    .card-body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex: 1;
+      padding-top: 2mm;
+      gap: 3mm;
+    }
+
+    .part-number-text {
+      font-family: var(--label-font);
+      font-feature-settings: "zero" 1;
+      font-size: 14pt;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #000000;
+      word-break: break-all;
+    }
+
+    .qr-box {
+      width: 24mm;
+      height: 24mm;
+      flex-shrink: 0;
+    }
+
+    .qr-box canvas {
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+    /* ================= 分割マスターQRモーダル ================= */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.72);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-box {
+      background: #ffffff;
+      border-radius: 8px;
+      max-width: 860px;
+      width: 100%;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-header {
+      padding: 12px 16px;
+      background: #1e293b;
+      color: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      gap: 10px;
+    }
+
+    .modal-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .qr-sync-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+    }
+
+    .qr-sync-card {
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      background: #f8fafc;
+      text-align: center;
+    }
+
+    .qr-sync-card canvas {
+      width: 165px;
+      height: 165px;
+      image-rendering: pixelated;
+      background: #ffffff;
+      padding: 4px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .sync-print-header {
+      display: none;
+    }
+
+    /* ============================================================================
+       レスポンシブ最適化（PC幅1025px以上は完全維持、タブレット・スマホ縦横両対応）
+       ============================================================================ */
+
+    /* 1. タブレット横画面（iPadランドスケープ等：幅768px〜1024pxの横向き） */
+    @media screen and (max-width: 1024px) and (orientation: landscape) {
+      .app-shell {
+        padding: 6px 10px;
+        gap: 6px;
+      }
+      header {
+        padding: 6px 10px;
+      }
+      .header-left h1 {
+        font-size: 0.92rem;
+      }
+      .camera-column {
+        width: 340px;
+      }
+      .scan-reticle {
+        width: 160px;
+        height: 160px;
+      }
+      .board-body {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+      .master-sidebar {
+        width: 360px;
+      }
+    }
+
+    /* 2. タブレット縦画面（iPadポートレート）＆ スマホ全般（縦・横） */
+    @media screen and (max-width: 1024px) and (orientation: portrait),
+           screen and (max-width: 767px) {
+      html, body {
+        height: auto;
+        min-height: 100dvh;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+      .app-shell {
+        height: auto;
+        min-height: 100dvh;
+        padding: 8px 10px 24px 10px;
+      }
+      header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 8px 10px;
+        gap: 8px;
+      }
+      .header-left {
+        justify-content: space-between;
+      }
+      .header-left h1 {
+        font-size: 0.96rem;
+      }
+      .nav-tabs {
+        width: 100%;
+      }
+      .nav-tab {
+        flex: 1;
+        padding: 8px 6px;
+        font-size: 0.84rem;
+        text-align: center;
+      }
+      .control-group {
+        justify-content: space-between;
+        gap: 6px;
+      }
+      .btn-step {
+        width: 34px;
+        height: 34px;
+        font-size: 1rem;
+      }
+      .stepper input {
+        width: 46px;
+        height: 34px;
+        font-size: 0.95rem;
+      }
+      button.btn {
+        padding: 8px 10px;
+        font-size: 0.82rem;
+      }
+
+      /* 実技スキャン画面を上下2段の縦積みレイアウトへ切り替え */
+      #simView {
+        flex-direction: column;
+        flex: none;
+        gap: 10px;
+      }
+      .camera-column {
+        width: 100%;
+        flex: none;
+      }
+      .camera-toolbar select {
+        height: 36px;
+        font-size: 0.86rem;
+      }
+      .video-box {
+        height: 270px;
+        flex: none;
+      }
+      .scan-reticle {
+        width: 175px;
+        height: 175px;
+      }
+      .btn-huge {
+        padding: 14px 12px;
+        font-size: 1.0rem;
+      }
+      .board-column {
+        width: 100%;
+        flex: none;
+        overflow: visible;
+      }
+      .board-body {
+        overflow-y: visible;
+        grid-template-columns: 1fr;
+      }
+
+      /* マスター管理・印刷画面も縦積みに切り替え */
+      #printView {
+        flex-direction: column;
+        flex: none;
+      }
+      .master-sidebar {
+        width: 100%;
+        max-height: none;
+        overflow-y: visible;
+      }
+      .master-list-box {
+        max-height: 280px;
+      }
+      .mini-step-btn {
+        width: 28px;
+        height: 28px;
+      }
+      .print-preview-scroll {
+        width: 100%;
+        padding: 10px;
+        overflow-x: auto;
+      }
+    }
+
+    /* スマホ縦画面（幅480px以下）の細部調整 */
+    @media screen and (max-width: 480px) {
+      .video-box {
+        height: 230px;
+      }
+      .scan-reticle {
+        width: 155px;
+        height: 155px;
+      }
+      .cat-count-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .slot-target-no {
+        font-size: 0.98rem;
+      }
+    }
+
+    /* ================= 印刷時レイアウト ================= */
+    @media print {
+      html, body {
+        height: auto;
+        overflow: visible;
+        background: #ffffff;
+      }
+      .app-shell {
+        display: block;
+        height: auto;
+        padding: 0;
+      }
+      header, #simView, .master-sidebar, .secret-timer-bar {
+        display: none !important;
+      }
+
+      body:not(.printing-sync-sheet) .modal-backdrop {
+        display: none !important;
+      }
+      body:not(.printing-sync-sheet) #printView {
+        display: block !important;
+      }
+      body:not(.printing-sync-sheet) .print-preview-scroll {
+        overflow: visible;
+        background: none;
+        padding: 0;
+        display: block;
+      }
+      body:not(.printing-sync-sheet) .a4-page {
+        box-shadow: none;
+        margin: 0;
+        width: 100%;
+        page-break-after: always;
+      }
+
+      body.printing-sync-sheet #printView {
+        display: none !important;
+      }
+      body.printing-sync-sheet .modal-backdrop {
+        position: static !important;
+        inset: auto !important;
+        background: none !important;
+        display: block !important;
+        padding: 0 !important;
+      }
+      body.printing-sync-sheet .modal-box {
+        box-shadow: none !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        border-radius: 0 !important;
+      }
+      body.printing-sync-sheet .modal-header {
+        display: none !important;
+      }
+      body.printing-sync-sheet .modal-body {
+        padding: 6mm !important;
+        overflow: visible !important;
+      }
+      body.printing-sync-sheet .sync-print-header {
+        display: block !important;
+        border-bottom: 2px solid #000000;
+        padding-bottom: 4mm;
+        margin-bottom: 4mm;
+      }
+      body.printing-sync-sheet .qr-sync-grid {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 6mm !important;
+      }
+      body.printing-sync-sheet .qr-sync-card {
+        border: 1.5px solid #000000 !important;
+        background: #ffffff !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        padding: 4mm !important;
+      }
+      body.printing-sync-sheet .qr-sync-card canvas {
+        width: 38mm !important;
+        height: 38mm !important;
+        border: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <header>
+    <div class="header-left">
+      <h1>ピッキング＆出荷実技シミュレーター</h1>
+      <div class="nav-tabs">
+        <button class="nav-tab active" id="tabSim" onclick="switchTab('sim'); this.blur();">📷 実技スキャン画面</button>
+        <button class="nav-tab" id="tabPrint" onclick="switchTab('print'); this.blur();">🖨️ 現品票マスター管理・印刷</button>
+      </div>
+    </div>
+
+    <div class="control-group" id="simControls">
+      <div class="stepper">
+        <span>出題数:</span>
+        <button class="btn-step" onclick="changeOrderCount(-1); this.blur();">-</button>
+        <input type="number" id="orderCountInput" value="10" min="1" max="50" onchange="resetSimulation(); this.blur();">
+        <button class="btn-step" onclick="changeOrderCount(1); this.blur();">+</button>
+      </div>
+      <button class="btn btn-outline" onclick="resetSimulation(); this.blur();">問題再生成</button>
+      <button class="btn btn-warning" onclick="toggleSyncScanMode(); this.blur();" id="btnToggleSync">📲 他PCマスターQR読込</button>
+      <button class="btn btn-outline" onclick="toggleFullScreen(); this.blur();">⛶ 全画面</button>
+    </div>
+  </header>
+
+  <!-- 裏モード：タイム計測バー（Alt + T で表示・非表示切替） -->
+  <div class="secret-timer-bar" id="secretTimerBar">
+    <div class="timer-left">
+      <span class="timer-badge">⏱️ タイム計測モード</span>
+      <span class="timer-display" id="timerDisplay">00:00.0</span>
+      <span style="font-size:0.75rem; color:#94a3b8;" id="timerStatusText">待機中</span>
+    </div>
+    <div class="timer-controls">
+      <button class="btn btn-success" style="padding: 5px 12px;" onclick="startTimer(); this.blur();">▶ スタート</button>
+      <button class="btn btn-warning" style="padding: 5px 12px;" onclick="stopTimer(); this.blur();">⏸ ストップ</button>
+      <button class="btn btn-outline" style="padding: 5px 12px;" onclick="resetTimer(); this.blur();">↺ リセット</button>
+    </div>
+  </div>
+
+  <!-- ==================== 1. 実技スキャンシミュレーター画面 ==================== -->
+  <div id="simView">
+    <div class="camera-column">
+      <div class="phase-banner phase-picking" id="phaseBanner">
+        <div class="phase-title">
+          <span id="phaseTitleText">【工程1】ピッキング・スキャン</span>
+          <span id="phaseStepBadge">STEP 1 / 2</span>
+        </div>
+        <div class="phase-sub" id="phaseSubText">指示された現品票を探し、カメラにかざして在庫スキャンしてください</div>
+      </div>
+
+      <div class="camera-card">
+        <div class="camera-toolbar">
+          <select id="cameraSelect" title="使用するカメラを選択" onchange="this.blur()"></select>
+          <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.78rem;" onclick="startCamera(); this.blur();">カメラ起動</button>
+          <label style="color:#cbd5e1; font-size:0.75rem; display:flex; align-items:center; gap:3px; cursor:pointer;">
+            <input type="checkbox" id="mirrorCheck" onchange="updateMirror(); this.blur();"> 反転
+          </label>
+          <label style="color:#cbd5e1; font-size:0.75rem; display:flex; align-items:center; gap:3px; cursor:pointer;">
+            <input type="checkbox" id="soundCheck" checked onchange="this.blur();"> 音
+          </label>
+        </div>
+
+        <div class="video-box" id="videoBox">
+          <!-- iPad / iOS Safari の全画面動画化を防ぐインライン再生属性を完全指定 -->
+          <video id="video"
+                 autoplay
+                 playsinline
+                 webkit-playsinline="true"
+                 x5-playsinline="true"
+                 muted
+                 disablePictureInPicture
+                 controlsList="nodownload nofullscreen noremoteplayback"></video>
+          <div class="scan-reticle" id="scanReticle"></div>
+        </div>
+
+        <div class="scan-readout">
+          <span id="scanStatusMsg">カメラ起動後、中央枠にQRをかざしてください</span>
+          <span class="scan-readout-code" id="lastScannedText">---</span>
+        </div>
+      </div>
+
+      <div class="action-box">
+        <button class="btn-huge" id="mainActionBtn" style="background: var(--primary);" onclick="advancePhase(); this.blur();">
+          台車で出荷場へ移動 → 出荷スキャンへ切替
+        </button>
+        <div class="key-hint" id="keyHintText">キーボードの [Space] または [Enter] キーでも切り替えられます</div>
+      </div>
+    </div>
+
+    <div class="board-column">
+      <div class="board-header">
+        <span id="boardHeaderTitle">出荷指示リスト（印刷済保有枚数以内から出題・手元カード不足なし）</span>
+        <span id="progressSummary">ピッキング: 0/10 ｜ 出荷検品: 0/10</span>
+      </div>
+      <div class="unprinted-alert-bar" id="unprintedAlertBar">
+        <span id="unprintedAlertText">⚠️ 未印刷のマスター部品があります（未印刷の部品は出題対象から除外されています）</span>
+        <button class="btn btn-warning" style="padding: 3px 8px; font-size: 0.75rem;" onclick="switchTab('print')">印刷画面で確認</button>
+      </div>
+      <div class="board-body" id="boardBody"></div>
+    </div>
+  </div>
+
+  <!-- ==================== 2. 現品票マスター管理・印刷画面 ==================== -->
+  <div id="printView">
+    <div class="master-sidebar">
+      <h2>
+        <span>現品票マスター管理（系統別種類数＆保有枚数）</span>
+        <span class="save-badge" id="saveStatusBadge">自動保存済</span>
+      </h2>
+
+      <!-- 系統別の部番種類数 増減コントロール -->
+      <div class="cat-count-panel">
+        <div class="cat-count-title">
+          <span>📊 系統別の登録種類数（[＋]で未印刷追加 / [−]で削除）</span>
+          <span id="totalKindsBadge" style="color:#1e3a8a;">計 18 種</span>
+        </div>
+        <div class="cat-count-grid">
+          <div class="cat-count-cell">
+            <span>系統A</span>
+            <div style="display:flex; align-items:center; gap:3px;">
+              <button class="mini-step-btn" onclick="adjustCategoryKindCount('A', -1)">-</button>
+              <span class="cat-count-val" id="kindCnt_A">3</span>
+              <button class="mini-step-btn" onclick="adjustCategoryKindCount('A', 1)">+</button>
+            </div>
+          </div>
+          <div class="cat-count-cell">
+            <span>系統B</span>
+            <div style="display:flex; align-items:center; gap:3px;">
+              <button class="mini-step-btn" onclick="adjustCategoryKindCount('B', -1)">-</button>
+              <span class="cat-count-val" id="kindCnt_B">3</span>
+              <button class="mini-step-btn" onclick="adjustCategoryKindCount('B', 1)">+</button>
+            </div>
+          </div>
+          <div class="cat-count-cell">
+            <span>系統C</span>
+            <div style="display:flex; align-items:center; gap:3px;">
+              <button class="mini-step-btn" onclick="adjustCategoryKindCount('C', -1)">-</button>
+              <span class="cat-count-val" id="kindCnt_C">3</span>
+              <button class="mini-step-btn" onclick="adjustCategoryKindCount('C', 1)">+</button>
+            </div>
+          </div>
+          <div class="cat-count-cell">
+            <span>系統D</span>
+            <div style="display:flex; align-items:center; gap:3px;">
+              <button class="mini-step-btn" onclick="adjustCategoryKindCount('D', -1)">-</button>
+              <span class="cat-count-val" id="kindCnt_D">3</span>
+              <button class="mini-step-btn" onclick="adjustCategoryKindCount('D', 1)">+</button>
+            </div>
+          </div>
+          <div class="cat-count-cell">
+            <span>系統E</span>
+            <div style="display:flex; align-items:center; gap:3px;">
+              <button class="mini-step-btn" onclick="adjustCategoryKindCount('E', -1)">-</button>
+              <span class="cat-count-val" id="kindCnt_E">3</span>
+              <button class="mini-step-btn" onclick="adjustCategoryKindCount('E', 1)">+</button>
+            </div>
+          </div>
+          <div class="cat-count-cell">
+            <span>系統F</span>
+            <div style="display:flex; align-items:center; gap:3px;">
+              <button class="mini-step-btn" onclick="adjustCategoryKindCount('F', -1)">-</button>
+              <span class="cat-count-val" id="kindCnt_F">3</span>
+              <button class="mini-step-btn" onclick="adjustCategoryKindCount('F', 1)">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-panel">
+        <div class="filter-row">
+          <span style="font-size:0.75rem; font-weight:700; color:#475569;">表示絞込:</span>
+          <select id="categoryFilterSelect" onchange="onFilterChange()">
+            <option value="ALL">すべての系統（全件）</option>
+            <option value="A">系統A：6桁-4桁（462210-...）</option>
+            <option value="B">系統B：3桁-4桁（715-...）</option>
+            <option value="C">系統C：英字2+数字6（VR621114...）</option>
+            <option value="D">系統D：スペース区切り（8420 315...）</option>
+            <option value="E">系統E：英数字混在型式（MR72K111005...）</option>
+            <option value="F">系統F：英字3-数字5（KMT-10015...）</option>
+            <option value="OTHER">その他・自由入力</option>
+          </select>
+        </div>
+        <div class="status-tabs">
+          <button class="status-tab-btn active" id="stTabAll" onclick="setStatusFilter('ALL')">すべて (<span id="cntAll">0</span>)</button>
+          <button class="status-tab-btn" id="stTabUnprinted" onclick="setStatusFilter('UNPRINTED')">未印刷 (<span id="cntUnprinted">0</span>)</button>
+          <button class="status-tab-btn" id="stTabPrinted" onclick="setStatusFilter('PRINTED')">印刷済 (<span id="cntPrinted">0</span>)</button>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:6px;">
+        <input type="text" id="newPartInput" placeholder="手入力で部番追加 (例: KMT-10015-B)" style="flex:1; padding:5px 6px; border:1px solid #cbd5e1; border-radius:4px; font-family:var(--label-font); font-size:0.82rem;" onkeydown="if(event.key==='Enter') addMasterPart();">
+        <button class="btn btn-primary" style="padding:5px 10px;" onclick="addMasterPart()">＋追加</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        <button class="btn btn-outline" style="width:100%; font-size:0.74rem; padding:5px; justify-content:center; border-color:#f59e0b; color:#92400e; background:#fffbeb;" onclick="regenerateUnprintedOnly()">
+          🔄 「未印刷」の部番のみランダム再生成（印刷済は保持）
+        </button>
+        <div style="display:flex; gap:5px;">
+          <button class="btn btn-outline" style="flex:1; font-size:0.72rem; padding:5px; justify-content:center;" onclick="regenerateMasterList()">現在の系統種類数で一括新規生成</button>
+          <button class="btn btn-outline" style="flex:1; font-size:0.72rem; padding:5px; justify-content:center;" onclick="restoreDefaultMaster()">架空初期セット(18種)へ戻す</button>
+        </div>
+      </div>
+
+      <div class="master-list-box" id="masterListBox"></div>
+
+      <div class="stepper" style="justify-content: space-between; background:#f8fafc; padding:5px 8px; border-radius:4px; border:1px solid #e2e8f0;">
+        <span style="font-size:0.78rem;">各部番の印刷枚数:</span>
+        <div style="display:flex; align-items:center; gap:4px;">
+          <button class="btn-step" style="width:23px; height:23px;" onclick="changeCopies(-1)">-</button>
+          <input type="number" id="copiesPerPartInput" value="10" min="1" max="20" style="width:38px;" onchange="saveCopiesAndRender()">
+          <button class="btn-step" style="width:23px; height:23px;" onclick="changeCopies(1)">+</button>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:5px;">
+        <button class="btn btn-warning" style="width:100%; justify-content:center; padding:7px;" onclick="executePrint('UNPRINTED')">
+          🖨️ 「未印刷」の部番だけ追加印刷する
+        </button>
+        <button class="btn btn-success" style="width:100%; justify-content:center; padding:7px;" onclick="executePrint('FILTERED')">
+          🖨️ 現在表示中の部番をまとめて印刷する
+        </button>
+        <button class="btn btn-primary" style="width:100%; justify-content:center; padding:7px;" onclick="openExportQrModal()">
+          📲 他PC引き継ぎ用マスターQRを表示・印刷
+        </button>
+      </div>
+    </div>
+
+    <div class="print-preview-scroll" id="printPreviewScroll"></div>
+  </div>
+</div>
+
+<!-- 他PC引き継ぎ用・分割マスターQR表示＆専用シート印刷モーダル -->
+<div class="modal-backdrop" id="exportQrModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>📲 他PC引き継ぎ用マスターQRコード（自動分割）</span>
+      <div class="modal-header-actions">
+        <button class="btn btn-success" style="padding:4px 12px; font-size:0.8rem;" onclick="printSyncQrSheet()">🖨️ この同期QRシートをA4印刷</button>
+        <button class="btn btn-outline" style="padding:4px 10px; font-size:0.78rem;" onclick="closeExportQrModal()">閉じる</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="sync-print-header">
+        <div style="font-size:14pt; font-weight:800;">ピッキング＆出荷実技シミュレーター：マスターデータ引き継ぎ用QRシート</div>
+        <div style="font-size:9pt; color:#334155; margin-top:2px;" id="syncPrintMetaInfo">登録品番数: 0件</div>
+      </div>
+      <p style="font-size:0.84rem; color:#334155; line-height:1.5;">
+        カメラでの読み取り精度を最大化するため、マスターリストを自動で複数枚のQRコードに分割しています。<br>
+        引き継ぎ先の端末で<strong>「📲 他PCマスターQR読込」</strong>を押し、以下のQRコードを順番にカメラへかざしてください（順番は前後しても自動結合されます）。
+      </p>
+      <div class="qr-sync-grid" id="qrSyncGrid"></div>
+    </div>
+  </div>
+</div>
+
+<canvas id="procCanvas" style="display:none;"></canvas>
+
+<script>
+  /* ============================================================================
+     1. 完全オフライン内蔵型 QRコード生成エンジン (Version 2 & 3 / ECC-L 対応)
+     ============================================================================ */
+  const OfflineQR = (function() {
+    const EXP = new Uint8Array(256);
+    const LOG = new Uint8Array(256);
+    let x = 1;
+    for (let i = 0; i < 255; i++) {
+      EXP[i] = x;
+      LOG[x] = i;
+      x = (x << 1) ^ (x & 0x80 ? 0x11d : 0);
+    }
+    EXP[255] = EXP[0];
+
+    function gfMul(a, b) {
+      return (a === 0 || b === 0) ? 0 : EXP[(LOG[a] + LOG[b]) % 255];
+    }
+
+    function rsGenPoly(nsym) {
+      let g = [1];
+      for (let i = 0; i < nsym; i++) {
+        let next = new Array(g.length + 1).fill(0);
+        for (let j = 0; j < g.length; j++) {
+          next[j] ^= g[j];
+          next[j + 1] ^= gfMul(g[j], EXP[i]);
+        }
+        g = next;
+      }
+      return g;
+    }
+
+    function rsEncode(data, nsym) {
+      const gen = rsGenPoly(nsym);
+      const res = new Uint8Array(data.length + nsym);
+      res.set(data);
+      for (let i = 0; i < data.length; i++) {
+        const coef = res[i];
+        if (coef !== 0) {
+          for (let j = 0; j < gen.length; j++) {
+            res[i + j] ^= gfMul(gen[j], coef);
+          }
+        }
+      }
+      return res.slice(data.length);
+    }
+
+    function buildMatrix(text) {
+      const bytes = [];
+      for (let i = 0; i < text.length; i++) bytes.push(text.charCodeAt(i) & 0xff);
+
+      const useV3 = bytes.length > 32;
+      const size = useV3 ? 29 : 25;
+      const dataCap = useV3 ? 55 : 34;
+      const ecCap = useV3 ? 15 : 10;
+      const alignPos = useV3 ? 22 : 18;
+
+      let bits = [];
+      const pushBits = (val, len) => {
+        for (let i = len - 1; i >= 0; i--) bits.push((val >> i) & 1);
+      };
+
+      pushBits(0b0100, 4);
+      pushBits(bytes.length, 8);
+      bytes.forEach(b => pushBits(b, 8));
+      pushBits(0, 4);
+      while (bits.length % 8 !== 0) bits.push(0);
+
+      const codewords = [];
+      for (let i = 0; i < bits.length; i += 8) {
+        let b = 0;
+        for (let j = 0; j < 8; j++) b = (b << 1) | bits[i + j];
+        codewords.push(b);
+      }
+
+      const pads = [0xec, 0x11];
+      let pIdx = 0;
+      while (codewords.length < dataCap) {
+        codewords.push(pads[pIdx % 2]);
+        pIdx++;
+      }
+
+      const ecBytes = rsEncode(codewords, ecCap);
+      const finalBytes = codewords.concat(Array.from(ecBytes));
+
+      const modules = Array.from({ length: size }, () => new Int8Array(size).fill(-1));
+      const isFunc = Array.from({ length: size }, () => new Uint8Array(size));
+
+      const setFunc = (r, c, val) => {
+        if (r >= 0 && r < size && c >= 0 && c < size) {
+          modules[r][c] = val ? 1 : 0;
+          isFunc[r][c] = 1;
+        }
+      };
+
+      const placeFinder = (row, col) => {
+        for (let r = -1; r <= 7; r++) {
+          for (let c = -1; c <= 7; c++) {
+            const inOuter = (r >= 0 && r <= 6 && c >= 0 && c <= 6);
+            const inInner = (r >= 2 && r <= 4 && c >= 2 && c <= 4);
+            const onBorder = (r === 0 || r === 6 || c === 0 || c === 6);
+            setFunc(row + r, col + c, inOuter && (onBorder || inInner));
+          }
+        }
+      };
+      placeFinder(0, 0);
+      placeFinder(0, size - 7);
+      placeFinder(size - 7, 0);
+
+      for (let r = -2; r <= 2; r++) {
+        for (let c = -2; c <= 2; c++) {
+          const val = (Math.abs(r) === 2 || Math.abs(c) === 2 || (r === 0 && c === 0));
+          setFunc(alignPos + r, alignPos + c, val);
+        }
+      }
+
+      for (let i = 8; i < size - 8; i++) {
+        setFunc(6, i, i % 2 === 0);
+        setFunc(i, 6, i % 2 === 0);
+      }
+
+      setFunc(size - 8, 8, 1);
+      for (let i = 0; i < 9; i++) {
+        if (!isFunc[8][i]) isFunc[8][i] = 1;
+        if (!isFunc[i][8]) isFunc[i][8] = 1;
+      }
+      for (let i = 0; i < 8; i++) {
+        if (!isFunc[8][size - 1 - i]) isFunc[8][size - 1 - i] = 1;
+        if (!isFunc[size - 1 - i][8]) isFunc[size - 1 - i][8] = 1;
+      }
+
+      let bitIdx = 0;
+      let up = true;
+      for (let col = size - 1; col >= 1; col -= 2) {
+        if (col === 6) col--;
+        for (let i = 0; i < size; i++) {
+          const r = up ? (size - 1 - i) : i;
+          for (let dx = 0; dx < 2; dx++) {
+            const c = col - dx;
+            if (!isFunc[r][c]) {
+              let bit = 0;
+              if (bitIdx < finalBytes.length * 8) {
+                bit = (finalBytes[bitIdx >> 3] >> (7 - (bitIdx & 7))) & 1;
+                bitIdx++;
+              }
+              if ((r + c) % 2 === 0) bit ^= 1;
+              modules[r][c] = bit;
+            }
+          }
+        }
+        up = !up;
+      }
+
+      const fmt = 0x77c4;
+      for (let i = 0; i < 15; i++) {
+        const bit = (fmt >> i) & 1;
+        if (i < 6) modules[i][8] = bit;
+        else if (i < 8) modules[i + 1][8] = bit;
+        else modules[size - 15 + i][8] = bit;
+
+        if (i < 8) modules[8][size - 1 - i] = bit;
+        else if (i < 9) modules[8][15 - i] = bit;
+        else modules[8][14 - i] = bit;
+      }
+
+      return modules;
+    }
+
+    return {
+      drawToCanvas: function(canvas, text, scale = 5) {
+        const modules = buildMatrix(text);
+        const count = modules.length;
+        const margin = 2;
+        const total = (count + margin * 2) * scale;
+        canvas.width = total;
+        canvas.height = total;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, total, total);
+        ctx.fillStyle = '#000000';
+        for (let r = 0; r < count; r++) {
+          for (let c = 0; c < count; c++) {
+            if (modules[r][c] === 1) {
+              ctx.fillRect((c + margin) * scale, (r + margin) * scale, scale, scale);
+            }
+          }
+        }
+      }
+    };
+  })();
+
+  /* ============================================================================
+     2. 完全オフライン内蔵型 QRコード解析（デコード）エンジン
+     ============================================================================ */
+  const BuiltinQRDecoder = (function() {
+    const EXP = new Uint8Array(256);
+    const LOG = new Uint8Array(256);
+    let x = 1;
+    for (let i = 0; i < 255; i++) {
+      EXP[i] = x;
+      LOG[x] = i;
+      x = (x << 1) ^ (x & 0x80 ? 0x11d : 0);
+    }
+    EXP[255] = EXP[0];
+
+    function gfMul(a, b) {
+      return (a === 0 || b === 0) ? 0 : EXP[(LOG[a] + LOG[b]) % 255];
+    }
+
+    function rsCheckAndCorrect(codewords, nsym) {
+      const n = codewords.length;
+      const synd = new Uint8Array(nsym);
+      let hasError = false;
+      for (let i = 0; i < nsym; i++) {
+        let s = 0;
+        const root = EXP[i];
+        for (let j = 0; j < n; j++) s = gfMul(s, root) ^ codewords[j];
+        synd[i] = s;
+        if (s !== 0) hasError = true;
+      }
+      if (!hasError) return codewords;
+
+      let sigma = [1];
+      let oldSigma = [1];
+      for (let i = 0; i < nsym; i++) {
+        let delta = synd[i];
+        for (let j = 1; j < sigma.length; j++) delta ^= gfMul(sigma[j], synd[i - j]);
+        oldSigma.unshift(0);
+        if (delta !== 0) {
+          if (oldSigma.length > sigma.length) {
+            const nextSigma = oldSigma.map(v => gfMul(v, delta));
+            const invDelta = EXP[255 - LOG[delta]];
+            oldSigma = sigma.map(v => gfMul(v, invDelta));
+            sigma = nextSigma;
+          }
+          for (let j = 0; j < oldSigma.length; j++) sigma[j] ^= gfMul(delta, oldSigma[j]);
+        }
+      }
+
+      const errCount = sigma.length - 1;
+      if (errCount > Math.floor(nsym / 2)) return null;
+
+      const errPos = [];
+      for (let i = 0; i < n; i++) {
+        let sum = 0;
+        const xInv = EXP[(255 - i) % 255];
+        let xPow = 1;
+        for (let j = 0; j < sigma.length; j++) {
+          sum ^= gfMul(sigma[j], xPow);
+          xPow = gfMul(xPow, xInv);
+        }
+        if (sum === 0) errPos.push(n - 1 - i);
+      }
+      if (errPos.length !== errCount) return null;
+
+      const omega = new Array(nsym).fill(0);
+      for (let i = 0; i < nsym; i++) {
+        for (let j = 0; j < sigma.length && i - j >= 0; j++) omega[i] ^= gfMul(synd[i - j], sigma[j]);
+      }
+
+      const corrected = Uint8Array.from(codewords);
+      for (let k = 0; k < errPos.length; k++) {
+        const pos = errPos[k];
+        const xInv = EXP[(255 - (n - 1 - pos)) % 255];
+        let num = 0, xPow = 1;
+        for (let i = 0; i < nsym; i++) { num ^= gfMul(omega[i], xPow); xPow = gfMul(xPow, xInv); }
+        let den = 0; xPow = 1;
+        const xInv2 = gfMul(xInv, xInv);
+        for (let i = 1; i < sigma.length; i += 2) { den ^= gfMul(sigma[i], xPow); xPow = gfMul(xPow, xInv2); }
+        if (den === 0) return null;
+        corrected[pos] ^= gfMul(num, EXP[255 - LOG[den]]);
+      }
+      return corrected;
+    }
+
+    function checkRatio(counts) {
+      let total = 0;
+      for (let i = 0; i < 5; i++) {
+        if (counts[i] === 0) return false;
+        total += counts[i];
+      }
+      if (total < 7) return false;
+      const unit = total / 7.0;
+      const maxVar = unit * 0.65;
+      return Math.abs(unit - counts[0]) < maxVar &&
+             Math.abs(unit - counts[1]) < maxVar &&
+             Math.abs(3 * unit - counts[2]) < 3 * maxVar &&
+             Math.abs(unit - counts[3]) < maxVar &&
+             Math.abs(unit - counts[4]) < maxVar;
+    }
+
+    function binarize(gray, width, height) {
+      const bin = new Uint8Array(width * height);
+      const block = 16;
+      const gw = Math.ceil(width / block);
+      const gh = Math.ceil(height / block);
+      const mins = new Uint8Array(gw * gh).fill(255);
+      const maxs = new Uint8Array(gw * gh).fill(0);
+
+      for (let y = 0; y < height; y++) {
+        const by = (y / block) | 0;
+        for (let x = 0; x < width; x++) {
+          const bx = (x / block) | 0;
+          const idx = by * gw + bx;
+          const v = gray[y * width + x];
+          if (v < mins[idx]) mins[idx] = v;
+          if (v > maxs[idx]) maxs[idx] = v;
+        }
+      }
+
+      for (let y = 0; y < height; y++) {
+        const by = (y / block) | 0;
+        for (let x = 0; x < width; x++) {
+          const bx = (x / block) | 0;
+          let sumT = 0, cnt = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            const ny = by + dy;
+            if (ny < 0 || ny >= gh) continue;
+            for (let dx = -1; dx <= 1; dx++) {
+              const nx = bx + dx;
+              if (nx < 0 || nx >= gw) continue;
+              const bIdx = ny * gw + nx;
+              const diff = maxs[bIdx] - mins[bIdx];
+              sumT += (diff > 20) ? ((mins[bIdx] + maxs[bIdx]) >> 1) : 128;
+              cnt++;
+            }
+          }
+          bin[y * width + x] = gray[y * width + x] < ((sumT / cnt) | 0) ? 1 : 0;
+        }
+      }
+      return bin;
+    }
+
+    function findPatterns(bin, width, height) {
+      const candidates = [];
+
+      const crossCheckVertical = (startY, centerX, maxCount, total) => {
+        const counts = [0, 0, 0, 0, 0];
+        let y = startY;
+        while (y >= 0 && bin[y * width + centerX] === 1) { counts[2]++; y--; }
+        if (y < 0) return NaN;
+        while (y >= 0 && bin[y * width + centerX] === 0 && counts[1] <= maxCount) { counts[1]++; y--; }
+        if (y < 0 || counts[1] > maxCount) return NaN;
+        while (y >= 0 && bin[y * width + centerX] === 1 && counts[0] <= maxCount) { counts[0]++; y--; }
+        if (counts[0] > maxCount) return NaN;
+
+        y = startY + 1;
+        while (y < height && bin[y * width + centerX] === 1) { counts[2]++; y++; }
+        if (y === height) return NaN;
+        while (y < height && bin[y * width + centerX] === 0 && counts[3] <= maxCount) { counts[3]++; y++; }
+        if (y === height || counts[3] > maxCount) return NaN;
+        while (y < height && bin[y * width + centerX] === 1 && counts[4] <= maxCount) { counts[4]++; y++; }
+        if (counts[4] > maxCount) return NaN;
+
+        const vTotal = counts[0] + counts[1] + counts[2] + counts[3] + counts[4];
+        if (5 * Math.abs(vTotal - total) >= 2 * total) return NaN;
+        return checkRatio(counts) ? (y - counts[4] - counts[3] - counts[2] / 2.0) : NaN;
+      };
+
+      const crossCheckHorizontal = (startX, centerY, maxCount, total) => {
+        const counts = [0, 0, 0, 0, 0];
+        let x = startX;
+        while (x >= 0 && bin[centerY * width + x] === 1) { counts[2]++; x--; }
+        if (x < 0) return NaN;
+        while (x >= 0 && bin[centerY * width + x] === 0 && counts[1] <= maxCount) { counts[1]++; x--; }
+        if (x < 0 || counts[1] > maxCount) return NaN;
+        while (x >= 0 && bin[centerY * width + x] === 1 && counts[0] <= maxCount) { counts[0]++; x--; }
+        if (counts[0] > maxCount) return NaN;
+
+        x = startX + 1;
+        while (x < width && bin[centerY * width + x] === 1) { counts[2]++; x++; }
+        if (x === width) return NaN;
+        while (x < width && bin[centerY * width + x] === 0 && counts[3] <= maxCount) { counts[3]++; x++; }
+        if (x === width || counts[3] > maxCount) return NaN;
+        while (x < width && bin[centerY * width + x] === 1 && counts[4] <= maxCount) { counts[4]++; x++; }
+        if (counts[4] > maxCount) return NaN;
+
+        const hTotal = counts[0] + counts[1] + counts[2] + counts[3] + counts[4];
+        if (5 * Math.abs(hTotal - total) >= total) return NaN;
+        return checkRatio(counts) ? (x - counts[4] - counts[3] - counts[2] / 2.0) : NaN;
+      };
+
+      for (let y = 2; y < height - 2; y += 2) {
+        const counts = [0, 0, 0, 0, 0];
+        let state = 0;
+        for (let x = 0; x < width; x++) {
+          const p = bin[y * width + x];
+          if (p === 1) {
+            if ((state & 1) === 1) state++;
+            counts[state]++;
+          } else {
+            if ((state & 1) === 0) {
+              if (state === 4) {
+                if (checkRatio(counts)) {
+                  const total = counts[0] + counts[1] + counts[2] + counts[3] + counts[4];
+                  const cx0 = x - counts[4] - counts[3] - counts[2] / 2.0;
+                  const cy = crossCheckVertical(y, cx0 | 0, counts[2], total);
+                  if (!isNaN(cy)) {
+                    const cx = crossCheckHorizontal(cx0 | 0, cy | 0, counts[2], total);
+                    if (!isNaN(cx)) {
+                      const modSize = total / 7.0;
+                      let merged = false;
+                      for (let i = 0; i < candidates.length; i++) {
+                        const c = candidates[i];
+                        if (Math.abs(c.x - cx) < modSize && Math.abs(c.y - cy) < modSize) {
+                          c.x = (c.x * c.cnt + cx) / (c.cnt + 1);
+                          c.y = (c.y * c.cnt + cy) / (c.cnt + 1);
+                          c.mod = (c.mod * c.cnt + modSize) / (c.cnt + 1);
+                          c.cnt++;
+                          merged = true;
+                          break;
+                        }
+                      }
+                      if (!merged) candidates.push({ x: cx, y: cy, mod: modSize, cnt: 1 });
+                    }
+                  }
+                  state = 0;
+                  counts.fill(0);
+                } else {
+                  counts[0] = counts[2]; counts[1] = counts[3]; counts[2] = counts[4];
+                  counts[3] = 1; counts[4] = 0; state = 3;
+                }
+              } else {
+                state++;
+                counts[state]++;
+              }
+            } else {
+              counts[state]++;
+            }
+          }
+        }
+      }
+
+      if (candidates.length < 3) return null;
+      candidates.sort((a, b) => b.cnt - a.cnt);
+      const top3 = candidates.slice(0, 3);
+
+      const d01 = Math.hypot(top3[0].x - top3[1].x, top3[0].y - top3[1].y);
+      const d12 = Math.hypot(top3[1].x - top3[2].x, top3[1].y - top3[2].y);
+      const d02 = Math.hypot(top3[0].x - top3[2].x, top3[0].y - top3[2].y);
+
+      let tl, p1, p2;
+      if (d12 >= d01 && d12 >= d02) { tl = top3[0]; p1 = top3[1]; p2 = top3[2]; }
+      else if (d02 >= d01 && d02 >= d12) { tl = top3[1]; p1 = top3[0]; p2 = top3[2]; }
+      else { tl = top3[2]; p1 = top3[0]; p2 = top3[1]; }
+
+      const cross = (p1.x - tl.x) * (p2.y - tl.y) - (p1.y - tl.y) * (p2.x - tl.x);
+      return { tl, tr: cross > 0 ? p1 : p2, bl: cross > 0 ? p2 : p1 };
+    }
+
+    function decodeMatrix(bin, width, height, pts) {
+      const { tl, tr, bl } = pts;
+      const avgMod = (tl.mod + tr.mod + bl.mod) / 3.0;
+      const distTop = Math.hypot(tr.x - tl.x, tr.y - tl.y);
+      const distLeft = Math.hypot(bl.x - tl.x, bl.y - tl.y);
+      const rawDim = Math.round(((distTop + distLeft) / 2.0) / avgMod) + 7;
+
+      const validDims = [21, 25, 29, 33];
+      let dim = 25, minDiff = 999;
+      for (const d of validDims) {
+        if (Math.abs(rawDim - d) < minDiff) { minDiff = Math.abs(rawDim - d); dim = d; }
+      }
+      if (minDiff > 3) return null;
+
+      const span = dim - 7;
+      const ux = (tr.x - tl.x) / span, uy = (tr.y - tl.y) / span;
+      const vx = (bl.x - tl.x) / span, vy = (bl.y - tl.y) / span;
+      const originX = tl.x - 3.5 * ux - 3.5 * vx;
+      const originY = tl.y - 3.5 * uy - 3.5 * vy;
+
+      const grid = Array.from({ length: dim }, () => new Uint8Array(dim));
+      for (let r = 0; r < dim; r++) {
+        for (let c = 0; c < dim; c++) {
+          const sx = Math.round(originX + (c + 0.5) * ux + (r + 0.5) * vx);
+          const sy = Math.round(originY + (c + 0.5) * uy + (r + 0.5) * vy);
+          if (sx < 0 || sx >= width || sy < 0 || sy >= height) return null;
+          grid[r][c] = bin[sy * width + sx];
+        }
+      }
+
+      let fmtBits = 0;
+      for (let i = 0; i <= 5; i++) fmtBits = (fmtBits << 1) | grid[8][i];
+      fmtBits = (fmtBits << 1) | grid[8][7];
+      fmtBits = (fmtBits << 1) | grid[8][8];
+      fmtBits = (fmtBits << 1) | grid[7][8];
+      for (let i = 5; i >= 0; i--) fmtBits = (fmtBits << 1) | grid[i][8];
+
+      const FORMAT_LOOKUP = [
+        [0x77c4, 1, 0], [0x72f3, 1, 1], [0x7daa, 1, 2], [0x789d, 1, 3],
+        [0x662f, 1, 4], [0x6318, 1, 5], [0x6c41, 1, 6], [0x6976, 1, 7],
+        [0x5412, 0, 0], [0x5125, 0, 1], [0x5e7c, 0, 2], [0x5b4b, 0, 3],
+        [0x45f9, 0, 4], [0x40ce, 0, 5], [0x4f97, 0, 6], [0x4aa0, 0, 7]
+      ];
+
+      let bestFmt = null, bestDist = 4;
+      for (const entry of FORMAT_LOOKUP) {
+        let xor = fmtBits ^ entry[0], dist = 0;
+        while (xor) { dist += xor & 1; xor >>= 1; }
+        if (dist < bestDist) { bestDist = dist; bestFmt = entry; }
+      }
+      if (!bestFmt) return null;
+
+      const ecLevel = bestFmt[1], maskId = bestFmt[2];
+      const applyMask = (r, c) => {
+        switch (maskId) {
+          case 0: return (r + c) % 2 === 0;
+          case 1: return r % 2 === 0;
+          case 2: return c % 3 === 0;
+          case 3: return (r + c) % 3 === 0;
+          case 4: return (((r / 2) | 0) + ((c / 3) | 0)) % 2 === 0;
+          case 5: return ((r * c) % 2 + (r * c) % 3) === 0;
+          case 6: return (((r * c) % 2 + (r * c) % 3) % 2) === 0;
+          case 7: return (((r + c) % 2 + (r * c) % 3) % 2) === 0;
+        }
+        return false;
+      };
+
+      const isFunc = Array.from({ length: dim }, () => new Uint8Array(dim));
+      const markRect = (r0, c0, h, w) => {
+        for (let r = r0; r < r0 + h; r++) {
+          for (let c = c0; c < c0 + w; c++) {
+            if (r >= 0 && r < dim && c >= 0 && c < dim) isFunc[r][c] = 1;
+          }
+        }
+      };
+      markRect(0, 0, 9, 9);
+      markRect(0, dim - 8, 9, 8);
+      markRect(dim - 8, 0, 8, 9);
+      for (let i = 8; i < dim - 8; i++) { isFunc[6][i] = 1; isFunc[i][6] = 1; }
+      if (dim >= 25) markRect(dim - 9, dim - 9, 5, 5);
+
+      const rawBits = [];
+      let up = true;
+      for (let col = dim - 1; col >= 1; col -= 2) {
+        if (col === 6) col--;
+        for (let i = 0; i < dim; i++) {
+          const r = up ? (dim - 1 - i) : i;
+          for (let dx = 0; dx < 2; dx++) {
+            const c = col - dx;
+            if (!isFunc[r][c]) {
+              let b = grid[r][c];
+              if (applyMask(r, c)) b ^= 1;
+              rawBits.push(b);
+            }
+          }
+        }
+        up = !up;
+      }
+
+      const totalBytes = (rawBits.length / 8) | 0;
+      const codewords = new Uint8Array(totalBytes);
+      for (let i = 0; i < totalBytes; i++) {
+        let b = 0;
+        for (let j = 0; j < 8; j++) b = (b << 1) | rawBits[i * 8 + j];
+        codewords[i] = b;
+      }
+
+      const SPEC_TABLE = {
+        '21_1': [26, 7], '21_0': [26, 10],
+        '25_1': [44, 10], '25_0': [44, 16],
+        '29_1': [70, 15], '29_0': [70, 26],
+        '33_1': [100, 20], '33_0': [100, 36]
+      };
+      const spec = SPEC_TABLE[`${dim}_${ecLevel}`];
+      if (!spec || codewords.length < spec[0]) return null;
+
+      const corrected = rsCheckAndCorrect(codewords.slice(0, spec[0]), spec[1]);
+      if (!corrected) return null;
+
+      const bitStream = [];
+      const dataLen = spec[0] - spec[1];
+      for (let i = 0; i < dataLen; i++) {
+        for (let j = 7; j >= 0; j--) bitStream.push((corrected[i] >> j) & 1);
+      }
+
+      let ptr = 0;
+      const readBits = (n) => {
+        if (ptr + n > bitStream.length) return -1;
+        let v = 0;
+        for (let i = 0; i < n; i++) v = (v << 1) | bitStream[ptr++];
+        return v;
+      };
+
+      const mode = readBits(4);
+      if (mode === 4) {
+        const count = readBits(8);
+        if (count <= 0 || count > 64) return null;
+        let result = '';
+        for (let i = 0; i < count; i++) {
+          const ch = readBits(8);
+          if (ch < 32 || ch > 126) return null;
+          result += String.fromCharCode(ch);
+        }
+        return result;
+      } else if (mode === 2) {
+        const ALNUM = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
+        const count = readBits(9);
+        if (count <= 0 || count > 64) return null;
+        let result = '', rem = count;
+        while (rem >= 2) {
+          const val = readBits(11);
+          if (val < 0) return null;
+          result += ALNUM[(val / 45) | 0] + ALNUM[val % 45];
+          rem -= 2;
+        }
+        if (rem === 1) {
+          const val = readBits(6);
+          if (val < 0) return null;
+          result += ALNUM[val];
+        }
+        return result;
+      }
+      return null;
+    }
+
+    return {
+      decodeImageData: function(imgData) {
+        const { data, width, height } = imgData;
+        const gray = new Uint8Array(width * height);
+        for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+          gray[j] = (data[i] * 77 + data[i + 1] * 150 + data[i + 2] * 29) >> 8;
+        }
+        const bin = binarize(gray, width, height);
+        const pts = findPatterns(bin, width, height);
+        if (!pts) return null;
+        return decodeMatrix(bin, width, height, pts);
+      }
+    };
+  })();
+
+  /* ============================================================================
+     3. 全6系統（A〜F）完全架空マスター＆系統別種類数・印刷済み保有枚数上限管理
+     ============================================================================ */
+  const STORAGE_KEY_MASTER = 'picking_sim_master_v5_catkinds';
+  const STORAGE_KEY_COPIES = 'picking_sim_copies_v2';
+  const STORAGE_KEY_TIMER_MODE = 'picking_sim_secret_timer_mode';
+
+  const CATEGORY_NAMES = {
+    A: '系統A：6桁-4桁',
+    B: '系統B：3桁-4桁',
+    C: '系統C：英字2+数字6',
+    D: '系統D：スペース区切り',
+    E: '系統E：英数字混在型式',
+    F: '系統F：英字3-数字5',
+    OTHER: 'その他・自由入力'
+  };
+
+  function detectCategory(code) {
+    const s = code.trim().toUpperCase();
+    if (/^\d{5,6}-\d{3,4}(-[A-Z0-9]+)?$/.test(s)) return 'A';
+    if (/^\d{2,3}-\d{3,4}(-[A-Z0-9]+)?$/.test(s)) return 'B';
+    if (/^[A-Z]{2}\d{5,6}$/.test(s)) return 'C';
+    if (/^\d{4}\s+\d{3}\s+\d{3,4}(-[A-Z0-9]+)?$/.test(s)) return 'D';
+    if (/^[A-Z]{2}\d{2}[A-Z]\d{5,6}$/.test(s)) return 'E';
+    if (/^[A-Z]{3}-\d{4,5}(-[A-Z0-9]+)?$/.test(s)) return 'F';
+    return 'OTHER';
+  }
+
+  function createDigitDropVariant(code) {
+    const matchZero = code.match(/00+/);
+    if (matchZero) {
+      return code.replace(matchZero[0], matchZero[0].slice(1));
+    }
+    const matchOne = code.match(/11+/);
+    if (matchOne) {
+      return code.replace(matchOne[0], matchOne[0].slice(1));
+    }
+    return null;
+  }
+
+  const DEFAULT_MASTER_ITEMS = [
+    { code: '462210-0038-C', category: 'A', printed: true, copies: 10 },
+    { code: '462210-038-C',  category: 'A', printed: true, copies: 10 },
+    { code: '462210-0038-G', category: 'A', printed: true, copies: 10 },
+    { code: '715-0004-A',    category: 'B', printed: true, copies: 10 },
+    { code: '715-004-A',     category: 'B', printed: true, copies: 10 },
+    { code: '715-0004-B',    category: 'B', printed: true, copies: 10 },
+    { code: 'VR621114',      category: 'C', printed: true, copies: 10 },
+    { code: 'VR62114',       category: 'C', printed: true, copies: 10 },
+    { code: 'WR621114',      category: 'C', printed: true, copies: 10 },
+    { code: '8420 315 0007-C', category: 'D', printed: true, copies: 10 },
+    { code: '8420 315 007-C',  category: 'D', printed: true, copies: 10 },
+    { code: '8426 315 0007-C', category: 'D', printed: true, copies: 10 },
+    { code: 'MR72K111005',   category: 'E', printed: true, copies: 10 },
+    { code: 'MR72K11005',    category: 'E', printed: true, copies: 10 },
+    { code: 'AX80P300018',   category: 'E', printed: true, copies: 10 },
+    { code: 'KMT-10015-B',   category: 'F', printed: true, copies: 10 },
+    { code: 'KMT-1015-B',    category: 'F', printed: true, copies: 10 },
+    { code: 'KNT-10015-B',   category: 'F', printed: true, copies: 10 }
+  ];
+
+  function generateFictionalCodeForCategory(cat, existingSet) {
+    for (let attempt = 0; attempt < 30; attempt++) {
+      let code = '';
+      if (cat === 'A') {
+        const head = Math.floor(Math.random() * 500 + 300);
+        const mid = Math.floor(Math.random() * 89 + 10);
+        const tail = Math.floor(Math.random() * 89 + 10);
+        const suf = ['C', 'G', 'D'][Math.floor(Math.random() * 3)];
+        code = `${head}1${mid}-00${tail}-${suf}`;
+      } else if (cat === 'B') {
+        const head = Math.floor(Math.random() * 600 + 300);
+        const tail = Math.floor(Math.random() * 8 + 1);
+        const suf = ['A', 'B', 'E'][Math.floor(Math.random() * 3)];
+        code = `${head}-000${tail}-${suf}`;
+      } else if (cat === 'C') {
+        const pre = ['VR', 'WR', 'ZM', 'NX', 'PL'][Math.floor(Math.random() * 5)];
+        const mid = Math.floor(Math.random() * 89 + 10);
+        const tail = Math.floor(Math.random() * 8 + 1);
+        code = `${pre}${mid}111${tail}`;
+      } else if (cat === 'D') {
+        const b1 = Math.floor(Math.random() * 3500 + 6000);
+        const b2 = Math.floor(Math.random() * 700 + 200);
+        const b3 = Math.floor(Math.random() * 8 + 1);
+        code = `${b1} ${b2} 000${b3}-C`;
+      } else if (cat === 'E') {
+        const safePrefixes = ['MR72K', 'AX80P', 'CN41M', 'LM66R', 'BR34N', 'VX90T'];
+        const pre = safePrefixes[Math.floor(Math.random() * safePrefixes.length)];
+        const tail = Math.floor(Math.random() * 8 + 1);
+        code = `${pre}11100${tail}`;
+      } else if (cat === 'F') {
+        const fPre = ['KMT', 'TYT', 'NSK', 'HND', 'DNP', 'KNT'][Math.floor(Math.random() * 6)];
+        const mid = Math.floor(Math.random() * 89 + 10);
+        const suf = ['B', 'A', 'G'][Math.floor(Math.random() * 3)];
+        code = `${fPre}-100${mid}-${suf}`;
+      } else {
+        const p = ['GEN', 'SUB', 'PRT'][Math.floor(Math.random() * 3)];
+        code = `${p}-000${Math.floor(Math.random() * 89 + 10)}`;
+      }
+
+      if (!code.includes('ST55S4') && (!existingSet || !existingSet.has(code))) {
+        return code;
+      }
+    }
+    return `PRT-${Math.floor(Math.random() * 8999 + 1000)}`;
+  }
+
+  function loadSavedMaster() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_MASTER);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(item => ({
+            code: item.code,
+            category: item.category || detectCategory(item.code),
+            printed: Boolean(item.printed),
+            copies: typeof item.copies === 'number' ? item.copies : (item.printed ? 10 : 0)
+          }));
+        }
+      }
+    } catch (e) {}
+    const init = DEFAULT_MASTER_ITEMS.map(item => ({ ...item }));
+    saveMaster(init);
+    return init;
+  }
+
+  function saveMaster(list) {
+    try {
+      localStorage.setItem(STORAGE_KEY_MASTER, JSON.stringify(list));
+      const badge = document.getElementById('saveStatusBadge');
+      if (badge) badge.textContent = '自動保存済';
+    } catch (e) {}
+  }
+
+  let masterItems = loadSavedMaster();
+  let filterCategory = 'ALL';
+  let filterStatus = 'ALL';
+  let currentPrintTargetList = [];
+
+  let currentPhase = 'picking';
+  let prevPhaseBeforeSync = 'picking';
+  let orderSlots = [];
+  let extraPickScans = [];
+  let extraShipScans = [];
+
+  let syncTotalChunks = 0;
+  let syncReceivedChunks = {};
+
+  let isTimerModeVisible = false;
+  let timerRunning = false;
+  let timerElapsedMs = 0;
+  let timerLastTick = 0;
+  let timerIntervalId = null;
+
+  const video = document.getElementById('video');
+  const procCanvas = document.getElementById('procCanvas');
+  const procCtx = procCanvas.getContext('2d', { willReadFrequently: true });
+  const scanReticle = document.getElementById('scanReticle');
+  let currentStream = null;
+  let scanLoopId = null;
+  let isCooldown = false;
+  let lastCode = null;
+  let noCodeFrames = 0;
+
+  /* iOS Safari / WebKit の強制フルスクリーン化を防止し、インライン表示を維持する */
+  function enforceInlineVideo(v) {
+    if (!v) return;
+    v.playsInline = true;
+    v.muted = true;
+    v.controls = false;
+    v.setAttribute('playsinline', '');
+    v.setAttribute('webkit-playsinline', 'true');
+    v.setAttribute('x5-playsinline', 'true');
+    v.removeAttribute('controls');
+  }
+
+  video.addEventListener('webkitbeginfullscreen', (e) => {
+    e.preventDefault();
+    if (typeof video.webkitExitFullscreen === 'function') {
+      try { video.webkitExitFullscreen(); } catch (err) {}
+    }
+  });
+
+  /* ============================================================================
+     4. 裏モード（Alt + T）タイム計測機能（手動スタート / ストップ / リセット）
+     ============================================================================ */
+  function toggleSecretTimerMode() {
+    isTimerModeVisible = !isTimerModeVisible;
+    const bar = document.getElementById('secretTimerBar');
+    bar.classList.toggle('visible', isTimerModeVisible);
+    try {
+      localStorage.setItem(STORAGE_KEY_TIMER_MODE, isTimerModeVisible ? '1' : '0');
+    } catch (e) {}
+  }
+
+  function formatElapsedTime(ms) {
+    const totalTenths = Math.floor(ms / 100);
+    const tenths = totalTenths % 10;
+    const totalSec = Math.floor(totalTenths / 10);
+    const sec = totalSec % 60;
+    const min = Math.floor(totalSec / 60);
+    return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}.${tenths}`;
+  }
+
+  function updateTimerDisplay() {
+    const disp = document.getElementById('timerDisplay');
+    disp.textContent = formatElapsedTime(timerElapsedMs);
+    disp.classList.toggle('running', timerRunning);
+    disp.classList.toggle('stopped', !timerRunning && timerElapsedMs > 0);
+  }
+
+  function startTimer() {
+    if (timerRunning) return;
+    timerRunning = true;
+    timerLastTick = performance.now();
+    document.getElementById('timerStatusText').textContent = '計測中...';
+    timerIntervalId = setInterval(() => {
+      const now = performance.now();
+      timerElapsedMs += (now - timerLastTick);
+      timerLastTick = now;
+      updateTimerDisplay();
+    }, 50);
+    updateTimerDisplay();
+  }
+
+  function stopTimer() {
+    if (!timerRunning) return;
+    const now = performance.now();
+    timerElapsedMs += (now - timerLastTick);
+    timerRunning = false;
+    if (timerIntervalId) {
+      clearInterval(timerIntervalId);
+      timerIntervalId = null;
+    }
+    document.getElementById('timerStatusText').textContent = '停止中';
+    updateTimerDisplay();
+  }
+
+  function resetTimer() {
+    stopTimer();
+    timerElapsedMs = 0;
+    document.getElementById('timerStatusText').textContent = '待機中';
+    updateTimerDisplay();
+  }
+
+  /* ============================================================================
+     5. タブ切替・実技シミュレーション進行制御（印刷済み保有枚数上限保証）
+     ============================================================================ */
+  function switchTab(tab) {
+    if (currentPhase === 'sync' && tab !== 'sim') {
+      exitSyncScanMode(false);
+    }
+    document.getElementById('tabSim').classList.toggle('active', tab === 'sim');
+    document.getElementById('tabPrint').classList.toggle('active', tab === 'print');
+    document.getElementById('simView').style.display = tab === 'sim' ? 'flex' : 'none';
+    document.getElementById('printView').style.display = tab === 'print' ? 'flex' : 'none';
+    document.getElementById('simControls').style.display = tab === 'sim' ? 'flex' : 'none';
+
+    if (tab === 'print') {
+      renderMasterSidebar();
+      prepareAndRenderPrintPreview('FILTERED');
+    } else {
+      updateUnprintedAlertBar();
+    }
+  }
+
+  function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
+
+  function changeOrderCount(delta) {
+    const inp = document.getElementById('orderCountInput');
+    let v = (parseInt(inp.value) || 10) + delta;
+    if (v < 1) v = 1;
+    if (v > 50) v = 50;
+    inp.value = v;
+    resetSimulation();
+  }
+
+  function updateUnprintedAlertBar() {
+    const unprintedCount = masterItems.filter(m => !m.printed || m.copies <= 0).length;
+    const bar = document.getElementById('unprintedAlertBar');
+    if (unprintedCount > 0) {
+      bar.style.display = 'flex';
+      document.getElementById('unprintedAlertText').textContent =
+        `⚠️ 未印刷（保有0枚）のマスター部品が ${unprintedCount} 件あります（未印刷の部品は出題対象から除外されています）`;
+    } else {
+      bar.style.display = 'none';
+    }
+  }
+
+  function resetSimulation() {
+    if (currentPhase === 'sync') {
+      exitSyncScanMode(false);
+    }
+    let reqCount = Math.max(1, Math.min(50, parseInt(document.getElementById('orderCountInput').value) || 10));
+
+    const availableDeck = [];
+    let printedKindsCount = 0;
+    masterItems.forEach(item => {
+      if (item.printed && item.copies > 0) {
+        printedKindsCount++;
+        const cap = Math.min(50, Math.floor(item.copies));
+        for (let c = 0; c < cap; c++) {
+          availableDeck.push(item.code);
+        }
+      }
+    });
+
+    if (availableDeck.length === 0) {
+      masterItems.forEach(item => availableDeck.push(item.code));
+      printedKindsCount = masterItems.length;
+    }
+
+    for (let i = availableDeck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [availableDeck[i], availableDeck[j]] = [availableDeck[j], availableDeck[i]];
+    }
+
+    const actualCount = Math.min(reqCount, availableDeck.length);
+    document.getElementById('orderCountInput').value = actualCount;
+
+    orderSlots = [];
+    for (let i = 0; i < actualCount; i++) {
+      orderSlots.push({
+        target: availableDeck[i],
+        picked: false,
+        shipped: false
+      });
+    }
+
+    extraPickScans = [];
+    extraShipScans = [];
+    currentPhase = 'picking';
+    lastCode = null;
+    document.getElementById('lastScannedText').textContent = '---';
+    document.getElementById('boardHeaderTitle').textContent =
+      `出荷指示リスト（印刷済 ${printedKindsCount}種 / 総保有 ${availableDeck.length}枚以内から出題）`;
+
+    updateUnprintedAlertBar();
+    updatePhaseUI();
+    renderBoard();
+  }
+
+  function advancePhase() {
+    if (currentPhase === 'sync') {
+      exitSyncScanMode(true);
+      return;
+    }
+
+    if (currentPhase === 'picking') {
+      currentPhase = 'shipping';
+      lastCode = null;
+      document.getElementById('lastScannedText').textContent = '---';
+      playTone(1600, 0.15);
+    } else if (currentPhase === 'shipping') {
+      currentPhase = 'result';
+      if (timerRunning) {
+        stopTimer();
+      }
+      playTone(2000, 0.25);
+    } else if (currentPhase === 'result') {
+      resetSimulation();
+      return;
+    }
+    updatePhaseUI();
+    renderBoard();
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.altKey && (e.key === 't' || e.key === 'T' || e.code === 'KeyT')) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleSecretTimerMode();
+      return;
+    }
+
+    if (document.activeElement && document.activeElement.tagName === 'INPUT' &&
+        (document.activeElement.type === 'text' || document.activeElement.type === 'number')) {
+      return;
+    }
+    if (document.getElementById('simView').style.display === 'none') return;
+    if (document.getElementById('exportQrModal').style.display === 'flex') return;
+
+    if (e.code === 'Space' || e.code === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+      advancePhase();
+    }
+  }, true);
+
+  function updatePhaseUI() {
+    const banner = document.getElementById('phaseBanner');
+    const title = document.getElementById('phaseTitleText');
+    const badge = document.getElementById('phaseStepBadge');
+    const sub = document.getElementById('phaseSubText');
+    const btn = document.getElementById('mainActionBtn');
+    const hint = document.getElementById('keyHintText');
+
+    banner.className = 'phase-banner';
+
+    if (currentPhase === 'sync') {
+      banner.classList.add('phase-sync');
+      title.textContent = '【設定同期】他PCマスターQR読込モード';
+      badge.textContent = 'SYNC';
+      sub.textContent = '元PCまたは同期シートの分割マスターQRコードを順番にカメラへかざしてください';
+      btn.style.background = '#6d28d9';
+      btn.textContent = '読込をキャンセルして実技画面へ戻る';
+      hint.textContent = '全チャンク読み取り完了で自動的にマスター保存＆出題生成されます';
+    } else if (currentPhase === 'picking') {
+      banner.classList.add('phase-picking');
+      title.textContent = '【工程1】ピッキング・スキャン（在庫引当）';
+      badge.textContent = 'STEP 1 / 2';
+      sub.textContent = '指示された現品票を探し、カメラにかざして1枚ずつスキャンしてください';
+      btn.style.background = 'var(--primary)';
+      btn.textContent = '台車で出荷場へ移動 → 出荷スキャンへ切替';
+      hint.textContent = '出荷場所へ移動したら上のボタン（または [Space] / [Enter] キー）で出荷モードへ切替';
+    } else if (currentPhase === 'shipping') {
+      banner.classList.add('phase-shipping');
+      title.textContent = '【工程2】出荷引き渡し・再スキャン（出荷検品）';
+      badge.textContent = 'STEP 2 / 2';
+      sub.textContent = '引き渡す現品票を再度1枚ずつカメラにかざして出荷検品してください';
+      btn.style.background = 'var(--shipping)';
+      btn.textContent = '出荷スキャン完了 → 照合判定を実行';
+      hint.textContent = '全枚数スキャン後、上のボタン（または [Space] / [Enter] キー）で正誤判定を表示';
+    } else {
+      banner.classList.add('phase-result');
+      title.textContent = '【照合判定完了】ピッキング＆出荷検品結果';
+      badge.textContent = 'COMPLETE';
+      sub.textContent = '結果を確認し、次の研修生へ交代する場合は下のボタンを押してください';
+      btn.style.background = 'var(--success)';
+      btn.textContent = '次の研修生へ（新しい問題を開始）';
+      hint.textContent = '上のボタン（または [Space] / [Enter] キー）で次の研修生用の問題へリセット';
+    }
+  }
+
+  /* ============================================================================
+     6. スキャン処理（通常スキャン ＆ 分割マスターQR同期受信）
+     ============================================================================ */
+  function toggleSyncScanMode() {
+    if (currentPhase === 'sync') {
+      exitSyncScanMode(true);
+    } else {
+      prevPhaseBeforeSync = currentPhase;
+      currentPhase = 'sync';
+      syncTotalChunks = 0;
+      syncReceivedChunks = {};
+      lastCode = null;
+      document.getElementById('lastScannedText').textContent = '同期待機中';
+      updatePhaseUI();
+      renderBoard();
+    }
+  }
+
+  function exitSyncScanMode(restoreReset) {
+    currentPhase = prevPhaseBeforeSync === 'sync' ? 'picking' : prevPhaseBeforeSync;
+    lastCode = null;
+    if (restoreReset) {
+      resetSimulation();
+    } else {
+      updatePhaseUI();
+      renderBoard();
+    }
+  }
+
+  function handleSyncQrPayload(code) {
+    if (!code.startsWith('SYNC|')) {
+      document.getElementById('scanStatusMsg').textContent = '⚠️ これは通常の現品票です。引き継ぎ用QRをかざしてください';
+      return;
+    }
+
+    const parts = code.split('|');
+    if (parts.length !== 3) return;
+    const [idxStr, totalStr] = parts[1].split('/');
+    const idx = parseInt(idxStr, 10);
+    const total = parseInt(totalStr, 10);
+    if (!idx || !total || idx < 1 || idx > total) return;
+
+    if (syncTotalChunks !== total) {
+      syncTotalChunks = total;
+      syncReceivedChunks = {};
+    }
+
+    const chunkEntries = parts[2].split(',').map(s => s.trim()).filter(Boolean).map(token => {
+      const [pCode, cntStr] = token.split(':');
+      const cnt = cntStr ? (parseInt(cntStr, 10) || 10) : 10;
+      return { code: pCode, copies: cnt };
+    });
+    syncReceivedChunks[idx] = chunkEntries;
+
+    renderBoard();
+
+    const loadedCount = Object.keys(syncReceivedChunks).length;
+    if (loadedCount === syncTotalChunks) {
+      const mergedItems = [];
+      const seen = new Set();
+      for (let i = 1; i <= syncTotalChunks; i++) {
+        (syncReceivedChunks[i] || []).forEach(entry => {
+          if (!seen.has(entry.code)) {
+            seen.add(entry.code);
+            mergedItems.push({
+              code: entry.code,
+              category: detectCategory(entry.code),
+              printed: entry.copies > 0,
+              copies: entry.copies
+            });
+          }
+        });
+      }
+
+      if (mergedItems.length > 0) {
+        masterItems = mergedItems;
+        saveMaster(masterItems);
+        playTone(2200, 0.3);
+        setTimeout(() => {
+          alert(`マスター同期が完了しました（計 ${masterItems.length} 品番・保有枚数情報を取り込みました）。`);
+          resetSimulation();
+        }, 150);
+      }
+    }
+  }
+
+  function processScannedPart(code) {
+    if (currentPhase === 'sync') {
+      handleSyncQrPayload(code);
+      return;
+    }
+    if (currentPhase === 'result') return;
+    if (code.startsWith('SYNC|')) return;
+
+    if (currentPhase === 'picking') {
+      const slot = orderSlots.find(s => s.target === code && !s.picked);
+      if (slot) {
+        slot.picked = true;
+      } else {
+        extraPickScans.push(code);
+      }
+    } else if (currentPhase === 'shipping') {
+      const slot = orderSlots.find(s => s.target === code && !s.shipped);
+      if (slot) {
+        slot.shipped = true;
+      } else {
+        extraShipScans.push(code);
+      }
+    }
+
+    renderBoard();
+  }
+
+  function renderBoard() {
+    const body = document.getElementById('boardBody');
+    body.innerHTML = '';
+
+    if (currentPhase === 'sync') {
+      const box = document.createElement('div');
+      box.className = 'sync-progress-box';
+      const loadedCount = Object.keys(syncReceivedChunks).length;
+
+      let chunksHtml = '';
+      if (syncTotalChunks === 0) {
+        chunksHtml = `<div style="font-size:0.9rem; color:#4c1d95; font-weight:700;">1枚目の引き継ぎ用QRコードをカメラ枠にかざしてください...</div>`;
+      } else {
+        chunksHtml = `<div class="sync-chunks-grid">`;
+        for (let i = 1; i <= syncTotalChunks; i++) {
+          const isLoaded = Boolean(syncReceivedChunks[i]);
+          chunksHtml += `<div class="sync-chunk-badge ${isLoaded ? 'loaded' : ''}">
+            QR [${i} / ${syncTotalChunks}]：${isLoaded ? '読込完了 ✓' : '未読込'}
+          </div>`;
+        }
+        chunksHtml += `</div>`;
+      }
+
+      box.innerHTML = `
+        <div style="font-size:1.05rem; font-weight:800; color:#4c1d95;">
+          📲 マスターデータ受信ステータス（${syncTotalChunks > 0 ? `${loadedCount} / ${syncTotalChunks} 枚完了` : '待機中'}）
+        </div>
+        <div style="font-size:0.84rem; color:#334155;">
+          元PCまたは印刷済みの引き継ぎ用QRコードを1枚ずつかざしてください。すべて緑色になると自動で保存・出題が開始されます。
+        </div>
+        ${chunksHtml}
+      `;
+      body.appendChild(box);
+      document.getElementById('progressSummary').textContent = 'マスター同期モード中';
+      return;
+    }
+
+    let pickCount = 0;
+    let shipCount = 0;
+    let perfectCount = 0;
+
+    orderSlots.forEach((slot, idx) => {
+      if (slot.picked) pickCount++;
+      if (slot.shipped) shipCount++;
+
+      const card = document.createElement('div');
+      card.className = 'order-slot';
+
+      const isComplete = slot.picked && slot.shipped;
+      if (currentPhase === 'result') {
+        if (isComplete) {
+          card.classList.add('correct');
+          perfectCount++;
+        } else {
+          card.classList.add('wrong');
+        }
+      }
+
+      let statusHtml = '';
+      if (currentPhase === 'result') {
+        statusHtml = `<span class="judge-mark">${isComplete ? '〇' : '✕'}</span>`;
+      }
+
+      let errorReason = '';
+      if (currentPhase === 'result' && !isComplete) {
+        const missing = [];
+        if (!slot.picked) missing.push('ピッキング未スキャン');
+        if (!slot.shipped) missing.push('出荷再スキャン漏れ');
+        errorReason = `<div class="error-detail">不備: ${missing.join(' / ')} ｜ 正解部番: ${slot.target}</div>`;
+      }
+
+      card.innerHTML = `
+        <div class="order-slot-top">
+          <span class="slot-index">#${String(idx + 1).padStart(2, '0')}</span>
+          <span class="slot-target-no">${slot.target}</span>
+          <div class="stage-badges">
+            <span class="badge-stage ${slot.picked ? 'done-pick' : ''}">1.在庫${slot.picked ? '済' : '未'}</span>
+            <span class="badge-stage ${slot.shipped ? 'done-ship' : ''}">2.出荷${slot.shipped ? '済' : '未'}</span>
+          </div>
+          ${statusHtml}
+        </div>
+        ${errorReason}
+      `;
+      body.appendChild(card);
+    });
+
+    if (extraPickScans.length > 0 || extraShipScans.length > 0) {
+      const extraBox = document.createElement('div');
+      extraBox.className = 'extra-scans-area';
+      extraBox.style.display = 'block';
+
+      let html = `<div class="extra-scans-title">⚠️ 指示外・過剰スキャンされた現品票（誤ピッキング / 数量オーバー）</div><div class="extra-scans-list">`;
+      extraPickScans.forEach(c => {
+        html += `<span class="extra-chip">[工程1:在庫] ${c}</span>`;
+      });
+      extraShipScans.forEach(c => {
+        html += `<span class="extra-chip">[工程2:出荷] ${c}</span>`;
+      });
+      html += `</div>`;
+      extraBox.innerHTML = html;
+      body.appendChild(extraBox);
+    }
+
+    const summary = document.getElementById('progressSummary');
+    if (currentPhase === 'result') {
+      const totalErrors = (orderSlots.length - perfectCount) + extraPickScans.length + extraShipScans.length;
+      const timeNote = (isTimerModeVisible || timerElapsedMs > 0)
+        ? ` ｜ ⏱️ 所要時間: ${formatElapsedTime(timerElapsedMs)}`
+        : '';
+      summary.innerHTML = totalErrors === 0
+        ? `<span style="color:var(--success);">全 ${orderSlots.length} 件 完全一致（ミス 0 件）${timeNote}</span>`
+        : `<span style="color:var(--danger);">一致: ${perfectCount} / ${orderSlots.length} 件（不備・誤読: ${totalErrors} 件）${timeNote}</span>`;
+    } else {
+      summary.textContent = `1.ピッキング: ${pickCount}/${orderSlots.length} ｜ 2.出荷検品: ${shipCount}/${orderSlots.length}`;
+    }
+  }
+
+  /* ============================================================================
+     7. カメラ＆ビープ音制御（iPadインライン強制再生対応）
+     ============================================================================ */
+  function playTone(freq = 2400, duration = 0.12) {
+    if (!document.getElementById('soundCheck').checked) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.22, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + duration);
+    } catch (e) {}
+  }
+
+  function updateMirror() {
+    video.classList.toggle('mirrored', document.getElementById('mirrorCheck').checked);
+  }
+
+  async function populateCameras() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(d => d.kind === 'videoinput');
+      const select = document.getElementById('cameraSelect');
+      const prev = select.value;
+      select.innerHTML = '';
+
+      videoDevices.forEach((dev, idx) => {
+        const opt = document.createElement('option');
+        opt.value = dev.deviceId;
+        opt.text = dev.label || `カメラ ${idx + 1}`;
+        select.appendChild(opt);
+      });
+
+      if (prev && videoDevices.some(d => d.deviceId === prev)) {
+        select.value = prev;
+      } else if (videoDevices.length > 1) {
+        const ext = videoDevices.find(d => !/integrated|built-in|facetime/i.test(d.label));
+        if (ext) select.value = ext.deviceId;
+      }
+    } catch (e) {}
+  }
+
+  async function startCamera() {
+    if (currentStream) {
+      currentStream.getTracks().forEach(t => t.stop());
+    }
+    if (scanLoopId) {
+      cancelAnimationFrame(scanLoopId);
+    }
+
+    enforceInlineVideo(video);
+
+    const select = document.getElementById('cameraSelect');
+    const deviceId = select.value;
+    const constraints = {
+      audio: false,
+      video: deviceId
+        ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        : { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    };
+
+    try {
+      currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+      enforceInlineVideo(video);
+      video.srcObject = currentStream;
+      await video.play().catch(() => {});
+
+      await populateCameras();
+      if (!select.value && currentStream.getVideoTracks()[0]) {
+        const st = currentStream.getVideoTracks()[0].getSettings();
+        if (st.deviceId) select.value = st.deviceId;
+      }
+      document.getElementById('scanStatusMsg').textContent = 'スキャン待機中：中央枠にQRをかざしてください';
+      scanLoop();
+    } catch (err) {
+      document.getElementById('scanStatusMsg').textContent = `カメラ起動エラー: ${err.message}`;
+    }
+  }
+
+  function scanLoop() {
+    if (video.readyState === video.HAVE_ENOUGH_DATA && currentPhase !== 'result') {
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (vw > 0 && vh > 0) {
+        const cropSize = Math.min(vw, vh) * 0.65;
+        const sx = (vw - cropSize) / 2;
+        const sy = (vh - cropSize) / 2;
+        const targetSize = 460;
+
+        procCanvas.width = targetSize;
+        procCanvas.height = targetSize;
+        procCtx.drawImage(video, sx, sy, cropSize, cropSize, 0, 0, targetSize, targetSize);
+
+        const imgData = procCtx.getImageData(0, 0, targetSize, targetSize);
+        const decoded = BuiltinQRDecoder.decodeImageData(imgData);
+
+        if (decoded) {
+          noCodeFrames = 0;
+          if (!isCooldown && decoded !== lastCode) {
+            isCooldown = true;
+            lastCode = decoded;
+            playTone(2400, 0.12);
+
+            scanReticle.classList.add('scanned');
+            document.getElementById('lastScannedText').textContent = decoded.startsWith('SYNC|') ? decoded.split('|')[1] : decoded;
+            document.getElementById('scanStatusMsg').textContent = '読み取り完了（次のカードは一度離してから）';
+
+            processScannedPart(decoded);
+
+            setTimeout(() => {
+              scanReticle.classList.remove('scanned');
+              scanReticle.classList.add('cooldown');
+              isCooldown = false;
+            }, 600);
+          }
+        } else {
+          noCodeFrames++;
+          if (noCodeFrames > 8) {
+            lastCode = null;
+            if (!isCooldown) {
+              scanReticle.classList.remove('cooldown');
+              document.getElementById('scanStatusMsg').textContent = 'スキャン待機中：中央枠にQRをかざしてください';
+            }
+          }
+        }
+      }
+    }
+    scanLoopId = requestAnimationFrame(scanLoop);
+  }
+
+  /* ============================================================================
+     8. 現品票マスター管理（系統別種類数増減・保有枚数管理・印刷・分割QR）
+     ============================================================================ */
+  function adjustCategoryKindCount(cat, delta) {
+    const catItems = masterItems.filter(m => m.category === cat);
+
+    if (delta > 0) {
+      if (catItems.length >= 15) {
+        alert(`系統${cat}の登録上限（15種類）に達しています。`);
+        return;
+      }
+      const usedSet = new Set(masterItems.map(m => m.code));
+      let newCode = null;
+
+      for (let i = catItems.length - 1; i >= 0; i--) {
+        const drop = createDigitDropVariant(catItems[i].code);
+        if (drop && drop !== catItems[i].code && !usedSet.has(drop) && !drop.includes('ST55S4')) {
+          newCode = drop;
+          break;
+        }
+      }
+      if (!newCode) {
+        newCode = generateFictionalCodeForCategory(cat, usedSet);
+      }
+
+      let insertIdx = -1;
+      for (let i = masterItems.length - 1; i >= 0; i--) {
+        if (masterItems[i].category === cat) {
+          insertIdx = i + 1;
+          break;
+        }
+      }
+      const newObj = {
+        code: newCode,
+        category: cat,
+        printed: false,
+        copies: 0
+      };
+      if (insertIdx >= 0) {
+        masterItems.splice(insertIdx, 0, newObj);
+      } else {
+        masterItems.push(newObj);
+      }
+    } else if (delta < 0) {
+      if (catItems.length <= 0) return;
+      if (masterItems.length <= 1) {
+        alert('マスター部品は全体で最低1種類必要です。');
+        return;
+      }
+
+      let removeIdx = -1;
+      for (let i = masterItems.length - 1; i >= 0; i--) {
+        if (masterItems[i].category === cat && (!masterItems[i].printed || masterItems[i].copies <= 0)) {
+          removeIdx = i;
+          break;
+        }
+      }
+      if (removeIdx === -1) {
+        for (let i = masterItems.length - 1; i >= 0; i--) {
+          if (masterItems[i].category === cat) {
+            removeIdx = i;
+            break;
+          }
+        }
+      }
+      if (removeIdx >= 0) {
+        masterItems.splice(removeIdx, 1);
+      }
+    }
+
+    saveMaster(masterItems);
+    renderMasterSidebar();
+    prepareAndRenderPrintPreview('FILTERED');
+    updateUnprintedAlertBar();
+  }
+
+  function getFilteredMasterItems() {
+    return masterItems.filter(item => {
+      const matchCat = (filterCategory === 'ALL') || (item.category === filterCategory);
+      const isPrinted = item.printed && item.copies > 0;
+      const matchStatus = (filterStatus === 'ALL') ||
+        (filterStatus === 'PRINTED' && isPrinted) ||
+        (filterStatus === 'UNPRINTED' && !isPrinted);
+      return matchCat && matchStatus;
+    });
+  }
+
+  function onFilterChange() {
+    filterCategory = document.getElementById('categoryFilterSelect').value;
+    renderMasterSidebar();
+    prepareAndRenderPrintPreview('FILTERED');
+  }
+
+  function setStatusFilter(st) {
+    filterStatus = st;
+    document.getElementById('stTabAll').classList.toggle('active', st === 'ALL');
+    document.getElementById('stTabUnprinted').classList.toggle('active', st === 'UNPRINTED');
+    document.getElementById('stTabPrinted').classList.toggle('active', st === 'PRINTED');
+    renderMasterSidebar();
+    prepareAndRenderPrintPreview('FILTERED');
+  }
+
+  function renderMasterSidebar() {
+    ['A', 'B', 'C', 'D', 'E', 'F'].forEach(cat => {
+      const el = document.getElementById(`kindCnt_${cat}`);
+      if (el) {
+        el.textContent = masterItems.filter(m => m.category === cat).length;
+      }
+    });
+    document.getElementById('totalKindsBadge').textContent = `計 ${masterItems.length} 種`;
+
+    const catPool = masterItems.filter(m => filterCategory === 'ALL' || m.category === filterCategory);
+    document.getElementById('cntAll').textContent = catPool.length;
+    document.getElementById('cntUnprinted').textContent = catPool.filter(m => !m.printed || m.copies <= 0).length;
+    document.getElementById('cntPrinted').textContent = catPool.filter(m => m.printed && m.copies > 0).length;
+
+    const box = document.getElementById('masterListBox');
+    box.innerHTML = '';
+
+    const list = getFilteredMasterItems();
+    if (list.length === 0) {
+      box.innerHTML = `<div style="padding:16px; text-align:center; font-size:0.8rem; color:#64748b;">該当する部品番号がありません</div>`;
+      return;
+    }
+
+    list.forEach(item => {
+      const globalIdx = masterItems.indexOf(item);
+      const isPrinted = item.printed && item.copies > 0;
+      const row = document.createElement('div');
+      row.className = 'master-item-row';
+      row.innerHTML = `
+        <div class="item-left-info">
+          <span class="item-part-code">${item.code}</span>
+          <span class="item-cat-label">${CATEGORY_NAMES[item.category] || 'その他'}</span>
+        </div>
+        <div class="item-stock-ctrl" title="保有（印刷済）枚数を1枚単位で調整">
+          <button class="mini-step-btn" onclick="adjustItemCopies(${globalIdx}, -1)">-</button>
+          <span class="stock-count-text">${item.copies}枚</span>
+          <button class="mini-step-btn" onclick="adjustItemCopies(${globalIdx}, 1)">+</button>
+        </div>
+        <button class="print-status-pill ${isPrinted ? 'pill-printed' : 'pill-unprinted'}"
+                title="クリックで印刷済 / 未印刷を手動切替"
+                onclick="toggleItemPrinted(${globalIdx})">
+          ${isPrinted ? '印刷済' : '未印刷'}
+        </button>
+        <button style="background:#fee2e2; color:#b91c1c; border:none; border-radius:3px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.74rem;"
+                onclick="removeMasterPart(${globalIdx})">削除</button>
+      `;
+      box.appendChild(row);
+    });
+  }
+
+  function adjustItemCopies(idx, delta) {
+    const item = masterItems[idx];
+    if (!item) return;
+    let next = (item.copies || 0) + delta;
+    if (next < 0) next = 0;
+    if (next > 50) next = 50;
+    item.copies = next;
+    item.printed = next > 0;
+    saveMaster(masterItems);
+    renderMasterSidebar();
+    updateUnprintedAlertBar();
+  }
+
+  function toggleItemPrinted(idx) {
+    const item = masterItems[idx];
+    if (!item) return;
+    if (item.printed && item.copies > 0) {
+      item.printed = false;
+      item.copies = 0;
+    } else {
+      const defaultCopies = Math.max(1, Math.min(20, parseInt(document.getElementById('copiesPerPartInput').value) || 10));
+      item.printed = true;
+      item.copies = defaultCopies;
+    }
+    saveMaster(masterItems);
+    renderMasterSidebar();
+    updateUnprintedAlertBar();
+  }
+
+  function addMasterPart() {
+    const inp = document.getElementById('newPartInput');
+    const val = inp.value.trim().toUpperCase();
+    if (!val) return;
+    if (val.includes('ST55S4')) {
+      alert('指定された除外文字列（ST55S4）を含む部番は登録できません。');
+      return;
+    }
+    if (val.length > 24) {
+      alert('部品番号は24文字以内で入力してください。');
+      return;
+    }
+    if (masterItems.some(m => m.code === val)) {
+      alert('すでに同じ部品番号が登録されています。');
+      return;
+    }
+
+    const cat = detectCategory(val);
+    masterItems.unshift({
+      code: val,
+      category: cat,
+      printed: false,
+      copies: 0
+    });
+    saveMaster(masterItems);
+    inp.value = '';
+
+    if (filterCategory !== 'ALL' && filterCategory !== cat) {
+      filterCategory = 'ALL';
+      document.getElementById('categoryFilterSelect').value = 'ALL';
+    }
+    renderMasterSidebar();
+    prepareAndRenderPrintPreview('FILTERED');
+    updateUnprintedAlertBar();
+  }
+
+  function removeMasterPart(idx) {
+    if (masterItems.length <= 1) {
+      alert('マスター部品は最低1種類必要です。');
+      return;
+    }
+    masterItems.splice(idx, 1);
+    saveMaster(masterItems);
+    renderMasterSidebar();
+    prepareAndRenderPrintPreview('FILTERED');
+    resetSimulation();
+  }
+
+  function regenerateUnprintedOnly() {
+    const unprintedItems = masterItems.filter(m => !m.printed || m.copies <= 0);
+    if (unprintedItems.length === 0) {
+      alert('現在「未印刷（0枚）」ステータスの部番はありません。\n新規追加した部番や、ステータスを「未印刷」に切り替えた部番が再生成の対象になります。');
+      return;
+    }
+
+    const usedCodes = new Set(masterItems.filter(m => m.printed && m.copies > 0).map(m => m.code));
+    let lastGeneratedBase = null;
+    let lastCategory = null;
+
+    masterItems.forEach(item => {
+      if (item.printed && item.copies > 0) return;
+
+      if (lastGeneratedBase && lastCategory === item.category) {
+        const drop = createDigitDropVariant(lastGeneratedBase);
+        if (drop && drop !== lastGeneratedBase && !usedCodes.has(drop)) {
+          item.code = drop;
+          usedCodes.add(drop);
+          lastGeneratedBase = null;
+          return;
+        }
+      }
+
+      const fresh = generateFictionalCodeForCategory(item.category, usedCodes);
+      item.code = fresh;
+      usedCodes.add(fresh);
+      lastGeneratedBase = fresh;
+      lastCategory = item.category;
+    });
+
+    saveMaster(masterItems);
+    renderMasterSidebar();
+    prepareAndRenderPrintPreview('FILTERED');
+    updateUnprintedAlertBar();
+  }
+
+  function regenerateMasterList() {
+    const currentCounts = {};
+    ['A', 'B', 'C', 'D', 'E', 'F'].forEach(cat => {
+      currentCounts[cat] = masterItems.filter(m => m.category === cat).length;
+    });
+    const totalTarget = Object.values(currentCounts).reduce((a, b) => a + b, 0) || 18;
+
+    if (!confirm(`現在の系統別種類数（計 ${totalTarget} 種）に合わせて、すべて新しい架空ランダム部番（未印刷・0枚）に書き換えますか？`)) {
+      return;
+    }
+
+    const newList = [];
+    const usedSet = new Set();
+
+    ['A', 'B', 'C', 'D', 'E', 'F'].forEach(cat => {
+      const targetCount = currentCounts[cat] > 0 ? currentCounts[cat] : (totalTarget === 0 ? 3 : 0);
+      let lastBase = null;
+
+      for (let i = 0; i < targetCount; i++) {
+        if (lastBase) {
+          const drop = createDigitDropVariant(lastBase);
+          if (drop && drop !== lastBase && !usedSet.has(drop)) {
+            usedSet.add(drop);
+            newList.push({ code: drop, category: cat, printed: false, copies: 0 });
+            lastBase = null;
+            continue;
+          }
+        }
+        const fresh = generateFictionalCodeForCategory(cat, usedSet);
+        usedSet.add(fresh);
+        newList.push({ code: fresh, category: cat, printed: false, copies: 0 });
+        lastBase = fresh;
+      }
+    });
+
+    masterItems = newList;
+    saveMaster(masterItems);
+    filterCategory = 'ALL';
+    filterStatus = 'ALL';
+    document.getElementById('categoryFilterSelect').value = 'ALL';
+    setStatusFilter('ALL');
+    resetSimulation();
+  }
+
+  function restoreDefaultMaster() {
+    if (!confirm('部品マスターを架空初期セット（全6系統×各3種＝18種・各10枚）に戻しますか？')) {
+      return;
+    }
+    masterItems = DEFAULT_MASTER_ITEMS.map(item => ({ ...item }));
+    saveMaster(masterItems);
+    filterCategory = 'ALL';
+    filterStatus = 'ALL';
+    document.getElementById('categoryFilterSelect').value = 'ALL';
+    setStatusFilter('ALL');
+    resetSimulation();
+  }
+
+  function changeCopies(delta) {
+    const inp = document.getElementById('copiesPerPartInput');
+    let v = (parseInt(inp.value) || 10) + delta;
+    if (v < 1) v = 1;
+    if (v > 20) v = 20;
+    inp.value = v;
+    saveCopiesAndRender();
+  }
+
+  function saveCopiesAndRender() {
+    const inp = document.getElementById('copiesPerPartInput');
+    let v = Math.max(1, Math.min(20, parseInt(inp.value) || 10));
+    inp.value = v;
+    try {
+      localStorage.setItem(STORAGE_KEY_COPIES, String(v));
+    } catch (e) {}
+    prepareAndRenderPrintPreview('FILTERED');
+  }
+
+  function prepareAndRenderPrintPreview(mode) {
+    let targetItems = [];
+    if (mode === 'UNPRINTED') {
+      targetItems = masterItems.filter(m => !m.printed || m.copies <= 0);
+    } else {
+      targetItems = getFilteredMasterItems();
+    }
+    currentPrintTargetList = targetItems;
+    renderPrintPages(targetItems);
+  }
+
+  function executePrint(mode) {
+    let targetItems = [];
+    if (mode === 'UNPRINTED') {
+      targetItems = masterItems.filter(m => !m.printed || m.copies <= 0);
+      if (targetItems.length === 0) {
+        alert('「未印刷」の部品番号はありません。すべて印刷済になっています。');
+        return;
+      }
+    } else {
+      targetItems = getFilteredMasterItems();
+      if (targetItems.length === 0) {
+        alert('印刷対象の部品番号がありません。');
+        return;
+      }
+    }
+
+    const copies = Math.max(1, Math.min(20, parseInt(document.getElementById('copiesPerPartInput').value) || 10));
+    currentPrintTargetList = targetItems;
+    renderPrintPages(targetItems);
+
+    document.body.classList.remove('printing-sync-sheet');
+    setTimeout(() => {
+      window.print();
+      targetItems.forEach(item => {
+        item.printed = true;
+        item.copies = copies;
+      });
+      saveMaster(masterItems);
+      renderMasterSidebar();
+      updateUnprintedAlertBar();
+    }, 150);
+  }
+
+  function renderPrintPages(targetItems) {
+    const container = document.getElementById('printPreviewScroll');
+    container.innerHTML = '';
+
+    if (!targetItems || targetItems.length === 0) {
+      container.innerHTML = `<div style="background:#fff; padding:24px; border-radius:8px; color:#475569; font-weight:700;">表示中のフィルター条件に一致する部品がありません</div>`;
+      return;
+    }
+
+    const copies = Math.max(1, Math.min(20, parseInt(document.getElementById('copiesPerPartInput').value) || 10));
+    const allCards = [];
+
+    targetItems.forEach(item => {
+      for (let c = 1; c <= copies; c++) {
+        allCards.push({ partNo: item.code, category: item.category, serial: c });
+      }
+    });
+
+    const perPage = 12;
+    for (let i = 0; i < allCards.length; i += perPage) {
+      const chunk = allCards.slice(i, i + perPage);
+      const page = document.createElement('div');
+      page.className = 'a4-page';
+
+      chunk.forEach((item, idx) => {
+        const canvasId = `print-qr-${i + idx}`;
+        const card = document.createElement('div');
+        card.className = 'kanban-card';
+        card.innerHTML = `
+          <div class="card-top-meta">
+            <span>部品現品票 [${item.category}系統]</span>
+            <span>枝番 ${String(item.serial).padStart(2, '0')}/${String(copies).padStart(2, '0')}</span>
+          </div>
+          <div class="card-body">
+            <div style="flex:1;">
+              <div style="font-size:7pt; color:#475569; margin-bottom:1mm;">部品番号 (PART NO.)</div>
+              <div class="part-number-text">${item.partNo}</div>
+            </div>
+            <div class="qr-box">
+              <canvas id="${canvasId}"></canvas>
+            </div>
+          </div>
+        `;
+        page.appendChild(card);
+      });
+
+      container.appendChild(page);
+
+      chunk.forEach((item, idx) => {
+        const canvas = document.getElementById(`print-qr-${i + idx}`);
+        OfflineQR.drawToCanvas(canvas, item.partNo, 6);
+      });
+    }
+  }
+
+  /* ============================================================================
+     9. 他PC引き継ぎ用・分割マスターQRコード表示＆A4専用シート印刷
+     ============================================================================ */
+  function openExportQrModal() {
+    const modal = document.getElementById('exportQrModal');
+    const grid = document.getElementById('qrSyncGrid');
+    grid.innerHTML = '';
+
+    const chunkSize = 2;
+    const chunks = [];
+    for (let i = 0; i < masterItems.length; i += chunkSize) {
+      chunks.push(masterItems.slice(i, i + chunkSize));
+    }
+
+    const total = chunks.length;
+    const nowStr = new Date().toLocaleDateString('ja-JP');
+    document.getElementById('syncPrintMetaInfo').textContent =
+      `出力日: ${nowStr} ｜ 登録マスター品番数: ${masterItems.length} 品番（全 ${total} 枚QR構成）`;
+
+    chunks.forEach((itemsChunk, idx) => {
+      const encodedTokens = itemsChunk.map(m => `${m.code}:${m.printed ? m.copies : 0}`);
+      const payload = `SYNC|${idx + 1}/${total}|${encodedTokens.join(',')}`;
+      const displayLabel = itemsChunk.map(m => `${m.code}(${m.printed ? m.copies : 0}枚)`).join(' / ');
+      const canvasId = `sync-export-qr-${idx}`;
+      const card = document.createElement('div');
+      card.className = 'qr-sync-card';
+      card.innerHTML = `
+        <div style="font-weight:800; color:#1e3a8a; font-size:0.95rem;">引き継ぎ用QR [${idx + 1} / ${total}]</div>
+        <canvas id="${canvasId}"></canvas>
+        <div style="font-family:var(--label-font); font-size:0.74rem; color:#475569; word-break:break-all;">
+          ${displayLabel}
+        </div>
+      `;
+      grid.appendChild(card);
+
+      setTimeout(() => {
+        const c = document.getElementById(canvasId);
+        if (c) OfflineQR.drawToCanvas(c, payload, 6);
+      }, 0);
+    });
+
+    modal.style.display = 'flex';
+  }
+
+  function printSyncQrSheet() {
+    document.body.classList.add('printing-sync-sheet');
+    setTimeout(() => {
+      window.print();
+      document.body.classList.remove('printing-sync-sheet');
+    }, 150);
+  }
+
+  function closeExportQrModal() {
+    document.body.classList.remove('printing-sync-sheet');
+    document.getElementById('exportQrModal').style.display = 'none';
+  }
+
+  window.onload = async () => {
+    enforceInlineVideo(video);
+    try {
+      const savedCopies = localStorage.getItem(STORAGE_KEY_COPIES);
+      if (savedCopies) {
+        document.getElementById('copiesPerPartInput').value = savedCopies;
+      }
+      const savedTimerMode = localStorage.getItem(STORAGE_KEY_TIMER_MODE);
+      if (savedTimerMode === '1') {
+        isTimerModeVisible = true;
+        document.getElementById('secretTimerBar').classList.add('visible');
+      }
+    } catch (e) {}
+
+    await populateCameras();
+    resetSimulation();
+  };
+</script>
+
+</body>
+</html>

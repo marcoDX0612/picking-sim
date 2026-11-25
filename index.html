@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ピッキング＆出荷実技シミュレーター（系統選択・iPadインラインカメラ・PC/スマホ縦横両対応）</title>
+  <title>ピッキング＆出荷実技シミュレーター（系統選択・外付けカメラ優先・エラー赤フラッシュ対応）</title>
   <style>
     :root {
       --bg-color: #f1f5f9;
@@ -36,6 +36,23 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
       background-color: var(--bg-color);
       color: var(--text);
+    }
+
+    /* ================= アイデアA：ウィンドウ全体の赤いフラッシュ発光オーバーレイ ================= */
+    .window-error-flash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0;
+      background: rgba(220, 38, 38, 0.24);
+      box-shadow: inset 0 0 0 14px rgba(220, 38, 38, 0.85), inset 0 0 70px rgba(220, 38, 38, 0.55);
+      transition: opacity 0.25s ease-out;
+    }
+
+    .window-error-flash.active {
+      opacity: 1;
+      transition: none;
     }
 
     .app-shell {
@@ -324,20 +341,20 @@
 
     .camera-toolbar {
       display: flex;
-      gap: 6px;
+      gap: 5px;
       align-items: center;
       flex-wrap: wrap;
     }
 
     .camera-toolbar select {
       flex: 1;
-      min-width: 120px;
-      padding: 5px 8px;
+      min-width: 110px;
+      padding: 5px 6px;
       border-radius: 4px;
       background: #1e293b;
       color: #f8fafc;
       border: 1px solid #334155;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
     }
 
     .video-box {
@@ -359,7 +376,6 @@
       pointer-events: none;
     }
 
-    /* iOS Safari / WebKit のネイティブ動画コントロール・全画面ボタンを非表示化 */
     video::-webkit-media-controls,
     video::-webkit-media-controls-enclosure,
     video::-webkit-media-controls-panel,
@@ -403,8 +419,15 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       gap: 8px;
+      transition: background 0.15s, border-color 0.15s;
+      border: 1px solid transparent;
+    }
+
+    .scan-readout.is-error {
+      background: #450a0a;
+      border-color: #ef4444;
     }
 
     .scan-readout-code {
@@ -414,6 +437,10 @@
       font-weight: 700;
       color: #4ade80;
       flex-shrink: 0;
+    }
+
+    .scan-readout-code.is-error {
+      color: #f87171;
     }
 
     .action-box {
@@ -593,40 +620,6 @@
       font-feature-settings: "zero" 1;
       border-top: 1px dashed #fca5a5;
       padding-top: 4px;
-    }
-
-    .extra-scans-area {
-      grid-column: 1 / -1;
-      background: #fef2f2;
-      border: 1.5px solid #f87171;
-      border-radius: 5px;
-      padding: 8px 12px;
-      display: none;
-    }
-
-    .extra-scans-title {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--danger);
-      margin-bottom: 4px;
-    }
-
-    .extra-scans-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .extra-chip {
-      font-family: var(--label-font);
-      font-feature-settings: "zero" 1;
-      font-size: 0.85rem;
-      font-weight: 700;
-      background: #ffffff;
-      border: 1px solid #ef4444;
-      color: #b91c1c;
-      padding: 2px 8px;
-      border-radius: 4px;
     }
 
     /* ================= マスターQR同期パネル（他PC読込用） ================= */
@@ -1066,35 +1059,16 @@
     /* ============================================================================
        レスポンシブ最適化（PC幅1025px以上は完全維持、タブレット・スマホ縦横両対応）
        ============================================================================ */
-
-    /* 1. タブレット横画面（iPadランドスケープ等：幅768px〜1024pxの横向き） */
     @media screen and (max-width: 1024px) and (orientation: landscape) {
-      .app-shell {
-        padding: 6px 10px;
-        gap: 6px;
-      }
-      header {
-        padding: 6px 10px;
-      }
-      .header-left h1 {
-        font-size: 0.92rem;
-      }
-      .camera-column {
-        width: 340px;
-      }
-      .scan-reticle {
-        width: 160px;
-        height: 160px;
-      }
-      .board-body {
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      }
-      .master-sidebar {
-        width: 360px;
-      }
+      .app-shell { padding: 6px 10px; gap: 6px; }
+      header { padding: 6px 10px; }
+      .header-left h1 { font-size: 0.92rem; }
+      .camera-column { width: 340px; }
+      .scan-reticle { width: 160px; height: 160px; }
+      .board-body { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+      .master-sidebar { width: 360px; }
     }
 
-    /* 2. タブレット縦画面（iPadポートレート）＆ スマホ全般（縦・横） */
     @media screen and (max-width: 1024px) and (orientation: portrait),
            screen and (max-width: 767px) {
       html, body {
@@ -1114,202 +1088,60 @@
         padding: 8px 10px;
         gap: 8px;
       }
-      .header-left {
-        justify-content: space-between;
-      }
-      .header-left h1 {
-        font-size: 0.96rem;
-      }
-      .nav-tabs {
-        width: 100%;
-      }
-      .nav-tab {
-        flex: 1;
-        padding: 8px 6px;
-        font-size: 0.84rem;
-        text-align: center;
-      }
-      .control-group {
-        justify-content: space-between;
-        gap: 6px;
-      }
-      .btn-step {
-        width: 34px;
-        height: 34px;
-        font-size: 1rem;
-      }
-      .stepper input {
-        width: 46px;
-        height: 34px;
-        font-size: 0.95rem;
-      }
-      button.btn {
-        padding: 8px 10px;
-        font-size: 0.82rem;
-      }
-
-      /* 実技スキャン画面を上下2段の縦積みレイアウトへ切り替え */
-      #simView {
-        flex-direction: column;
-        flex: none;
-        gap: 10px;
-      }
-      .camera-column {
-        width: 100%;
-        flex: none;
-      }
-      .camera-toolbar select {
-        height: 36px;
-        font-size: 0.86rem;
-      }
-      .video-box {
-        height: 270px;
-        flex: none;
-      }
-      .scan-reticle {
-        width: 175px;
-        height: 175px;
-      }
-      .btn-huge {
-        padding: 14px 12px;
-        font-size: 1.0rem;
-      }
-      .board-column {
-        width: 100%;
-        flex: none;
-        overflow: visible;
-      }
-      .board-body {
-        overflow-y: visible;
-        grid-template-columns: 1fr;
-      }
-
-      /* マスター管理・印刷画面も縦積みに切り替え */
-      #printView {
-        flex-direction: column;
-        flex: none;
-      }
-      .master-sidebar {
-        width: 100%;
-        max-height: none;
-        overflow-y: visible;
-      }
-      .master-list-box {
-        max-height: 280px;
-      }
-      .mini-step-btn {
-        width: 28px;
-        height: 28px;
-      }
-      .print-preview-scroll {
-        width: 100%;
-        padding: 10px;
-        overflow-x: auto;
-      }
+      .header-left { justify-content: space-between; }
+      .header-left h1 { font-size: 0.96rem; }
+      .nav-tabs { width: 100%; }
+      .nav-tab { flex: 1; padding: 8px 6px; font-size: 0.84rem; text-align: center; }
+      .control-group { justify-content: space-between; gap: 6px; }
+      .btn-step { width: 34px; height: 34px; font-size: 1rem; }
+      .stepper input { width: 46px; height: 34px; font-size: 0.95rem; }
+      button.btn { padding: 8px 10px; font-size: 0.82rem; }
+      #simView { flex-direction: column; flex: none; gap: 10px; }
+      .camera-column { width: 100%; flex: none; }
+      .camera-toolbar select { height: 36px; font-size: 0.86rem; }
+      .video-box { height: 270px; flex: none; }
+      .scan-reticle { width: 175px; height: 175px; }
+      .btn-huge { padding: 14px 12px; font-size: 1.0rem; }
+      .board-column { width: 100%; flex: none; overflow: visible; }
+      .board-body { overflow-y: visible; grid-template-columns: 1fr; }
+      #printView { flex-direction: column; flex: none; }
+      .master-sidebar { width: 100%; max-height: none; overflow-y: visible; }
+      .master-list-box { max-height: 280px; }
+      .mini-step-btn { width: 28px; height: 28px; }
+      .print-preview-scroll { width: 100%; padding: 10px; overflow-x: auto; }
     }
 
-    /* スマホ縦画面（幅480px以下）の細部調整 */
     @media screen and (max-width: 480px) {
-      .video-box {
-        height: 230px;
-      }
-      .scan-reticle {
-        width: 155px;
-        height: 155px;
-      }
-      .cat-count-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      .slot-target-no {
-        font-size: 0.98rem;
-      }
+      .video-box { height: 230px; }
+      .scan-reticle { width: 155px; height: 155px; }
+      .cat-count-grid { grid-template-columns: repeat(2, 1fr); }
+      .slot-target-no { font-size: 0.98rem; }
     }
 
-    /* ================= 印刷時レイアウト ================= */
     @media print {
-      html, body {
-        height: auto;
-        overflow: visible;
-        background: #ffffff;
-      }
-      .app-shell {
-        display: block;
-        height: auto;
-        padding: 0;
-      }
-      header, #simView, .master-sidebar, .secret-timer-bar {
-        display: none !important;
-      }
-
-      body:not(.printing-sync-sheet) .modal-backdrop {
-        display: none !important;
-      }
-      body:not(.printing-sync-sheet) #printView {
-        display: block !important;
-      }
-      body:not(.printing-sync-sheet) .print-preview-scroll {
-        overflow: visible;
-        background: none;
-        padding: 0;
-        display: block;
-      }
-      body:not(.printing-sync-sheet) .a4-page {
-        box-shadow: none;
-        margin: 0;
-        width: 100%;
-        page-break-after: always;
-      }
-
-      body.printing-sync-sheet #printView {
-        display: none !important;
-      }
-      body.printing-sync-sheet .modal-backdrop {
-        position: static !important;
-        inset: auto !important;
-        background: none !important;
-        display: block !important;
-        padding: 0 !important;
-      }
-      body.printing-sync-sheet .modal-box {
-        box-shadow: none !important;
-        max-width: 100% !important;
-        max-height: none !important;
-        border-radius: 0 !important;
-      }
-      body.printing-sync-sheet .modal-header {
-        display: none !important;
-      }
-      body.printing-sync-sheet .modal-body {
-        padding: 6mm !important;
-        overflow: visible !important;
-      }
-      body.printing-sync-sheet .sync-print-header {
-        display: block !important;
-        border-bottom: 2px solid #000000;
-        padding-bottom: 4mm;
-        margin-bottom: 4mm;
-      }
-      body.printing-sync-sheet .qr-sync-grid {
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 6mm !important;
-      }
-      body.printing-sync-sheet .qr-sync-card {
-        border: 1.5px solid #000000 !important;
-        background: #ffffff !important;
-        break-inside: avoid;
-        page-break-inside: avoid;
-        padding: 4mm !important;
-      }
-      body.printing-sync-sheet .qr-sync-card canvas {
-        width: 38mm !important;
-        height: 38mm !important;
-        border: none !important;
-      }
+      html, body { height: auto; overflow: visible; background: #ffffff; }
+      .app-shell { display: block; height: auto; padding: 0; }
+      header, #simView, .master-sidebar, .secret-timer-bar, .window-error-flash { display: none !important; }
+      body:not(.printing-sync-sheet) .modal-backdrop { display: none !important; }
+      body:not(.printing-sync-sheet) #printView { display: block !important; }
+      body:not(.printing-sync-sheet) .print-preview-scroll { overflow: visible; background: none; padding: 0; display: block; }
+      body:not(.printing-sync-sheet) .a4-page { box-shadow: none; margin: 0; width: 100%; page-break-after: always; }
+      body.printing-sync-sheet #printView { display: none !important; }
+      body.printing-sync-sheet .modal-backdrop { position: static !important; inset: auto !important; background: none !important; display: block !important; padding: 0 !important; }
+      body.printing-sync-sheet .modal-box { box-shadow: none !important; max-width: 100% !important; max-height: none !important; border-radius: 0 !important; }
+      body.printing-sync-sheet .modal-header { display: none !important; }
+      body.printing-sync-sheet .modal-body { padding: 6mm !important; overflow: visible !important; }
+      body.printing-sync-sheet .sync-print-header { display: block !important; border-bottom: 2px solid #000000; padding-bottom: 4mm; margin-bottom: 4mm; }
+      body.printing-sync-sheet .qr-sync-grid { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 6mm !important; }
+      body.printing-sync-sheet .qr-sync-card { border: 1.5px solid #000000 !important; background: #ffffff !important; break-inside: avoid; page-break-inside: avoid; padding: 4mm !important; }
+      body.printing-sync-sheet .qr-sync-card canvas { width: 38mm !important; height: 38mm !important; border: none !important; }
     }
   </style>
 </head>
 <body>
+
+<!-- ウィンドウ全体の赤いフラッシュ発光オーバーレイ（アイデアA） -->
+<div class="window-error-flash" id="windowErrorFlash"></div>
 
 <div class="app-shell">
   <header>
@@ -1322,7 +1154,6 @@
     </div>
 
     <div class="control-group" id="simControls">
-      <!-- 出題系統の複数選択チェックボックス（問題再生成ボタンで反映） -->
       <div class="cat-toggle-bar" title="指示書に出題したい系統を複数選択し、「問題再生成」を押してください">
         <button type="button" class="cat-chip selected" id="simChip_A" onclick="toggleSimCategory('A'); this.blur();">✓ A系統</button>
         <button type="button" class="cat-chip selected" id="simChip_B" onclick="toggleSimCategory('B'); this.blur();">✓ B系統</button>
@@ -1373,18 +1204,18 @@
 
       <div class="camera-card">
         <div class="camera-toolbar">
-          <select id="cameraSelect" title="使用するカメラを選択" onchange="this.blur()"></select>
-          <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.78rem;" onclick="startCamera(); this.blur();">カメラ起動</button>
-          <label style="color:#cbd5e1; font-size:0.75rem; display:flex; align-items:center; gap:3px; cursor:pointer;">
+          <select id="cameraSelect" title="使用するカメラを選択" onchange="onCameraSelectChange(); this.blur();"></select>
+          <button class="btn btn-outline" style="padding: 5px 7px; font-size: 0.74rem;" onclick="refreshCameraList(true); this.blur();" title="外付けUSBカメラを再検出">🔄再検出</button>
+          <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.78rem;" onclick="startCamera(true); this.blur();">カメラ起動</button>
+          <label style="color:#cbd5e1; font-size:0.74rem; display:flex; align-items:center; gap:2px; cursor:pointer;">
             <input type="checkbox" id="mirrorCheck" onchange="updateMirror(); this.blur();"> 反転
           </label>
-          <label style="color:#cbd5e1; font-size:0.75rem; display:flex; align-items:center; gap:3px; cursor:pointer;">
+          <label style="color:#cbd5e1; font-size:0.74rem; display:flex; align-items:center; gap:2px; cursor:pointer;">
             <input type="checkbox" id="soundCheck" checked onchange="this.blur();"> 音
           </label>
         </div>
 
         <div class="video-box" id="videoBox">
-          <!-- iPad / iOS Safari の全画面動画化を防ぐインライン再生属性を完全指定 -->
           <video id="video"
                  autoplay
                  playsinline
@@ -1396,8 +1227,8 @@
           <div class="scan-reticle" id="scanReticle"></div>
         </div>
 
-        <div class="scan-readout">
-          <span id="scanStatusMsg">カメラ起動後、中央枠にQRをかざしてください</span>
+        <div class="scan-readout" id="scanReadoutBox">
+          <span id="scanStatusMsg">「カメラ起動」を押して外付けカメラを接続してください</span>
           <span class="scan-readout-code" id="lastScannedText">---</span>
         </div>
       </div>
@@ -1431,7 +1262,6 @@
         <span class="save-badge" id="saveStatusBadge">自動保存済</span>
       </h2>
 
-      <!-- 系統別の部番種類数 増減コントロール -->
       <div class="cat-count-panel">
         <div class="cat-count-title">
           <span>📊 系統別の登録種類数（[＋]で未印刷追加 / [−]で削除）</span>
@@ -2215,6 +2045,7 @@
   const STORAGE_KEY_MASTER = 'picking_sim_master_v5_catkinds';
   const STORAGE_KEY_COPIES = 'picking_sim_copies_v2';
   const STORAGE_KEY_TIMER_MODE = 'picking_sim_secret_timer_mode';
+  const STORAGE_KEY_PREFERRED_CAM = 'picking_sim_preferred_cam_v1';
 
   const ALL_SIM_CATEGORIES = ['A', 'B', 'C', 'D', 'E', 'F', 'OTHER'];
   let selectedSimCategories = new Set(ALL_SIM_CATEGORIES);
@@ -2232,7 +2063,7 @@
   function toggleSimCategory(cat) {
     if (selectedSimCategories.has(cat)) {
       if (selectedSimCategories.size <= 1) {
-        return; // 最低1系統は必ず選択状態を維持
+        return;
       }
       selectedSimCategories.delete(cat);
     } else {
@@ -2399,13 +2230,37 @@
   const procCanvas = document.getElementById('procCanvas');
   const procCtx = procCanvas.getContext('2d', { willReadFrequently: true });
   const scanReticle = document.getElementById('scanReticle');
+  const scanReadoutBox = document.getElementById('scanReadoutBox');
+  const lastScannedTextEl = document.getElementById('lastScannedText');
+  const windowErrorFlashEl = document.getElementById('windowErrorFlash');
+  let errorFlashTimerId = null;
+
   let currentStream = null;
   let scanLoopId = null;
   let isCooldown = false;
   let lastCode = null;
   let noCodeFrames = 0;
 
-  /* iOS Safari / WebKit の強制フルスクリーン化を防止し、インライン表示を維持する */
+  function triggerWindowErrorFlash() {
+    if (!windowErrorFlashEl) return;
+    if (errorFlashTimerId) {
+      clearTimeout(errorFlashTimerId);
+    }
+    windowErrorFlashEl.classList.remove('active');
+    void windowErrorFlashEl.offsetWidth; // リフローして連続エラー時も再発光させる
+    windowErrorFlashEl.classList.add('active');
+    errorFlashTimerId = setTimeout(() => {
+      windowErrorFlashEl.classList.remove('active');
+      errorFlashTimerId = null;
+    }, 650);
+  }
+
+  function setReadoutState(text, isError) {
+    lastScannedTextEl.textContent = text;
+    lastScannedTextEl.classList.toggle('is-error', isError);
+    scanReadoutBox.classList.toggle('is-error', isError);
+  }
+
   function enforceInlineVideo(v) {
     if (!v) return;
     v.playsInline = true;
@@ -2487,7 +2342,7 @@
   }
 
   /* ============================================================================
-     5. タブ切替・実技シミュレーション進行制御（選択系統＆印刷済み保有枚数上限保証）
+     5. タブ切替・実技シミュレーション進行制御
      ============================================================================ */
   function switchTab(tab) {
     if (currentPhase === 'sync' && tab !== 'sim') {
@@ -2542,7 +2397,6 @@
     }
     let reqCount = Math.max(1, Math.min(50, parseInt(document.getElementById('orderCountInput').value) || 10));
 
-    // 選択された系統に属し、かつ「印刷済（保有枚数1枚以上）」の部品だけを抽出
     const activeCatList = ALL_SIM_CATEGORIES.filter(c => selectedSimCategories.has(c));
     const availableDeck = [];
     let printedKindsCount = 0;
@@ -2564,7 +2418,6 @@
       : activeCatList.map(c => c === 'OTHER' ? 'その他' : `${c}`).join('・') + '系統';
 
     if (availableDeck.length === 0) {
-      // 選択した系統に印刷済カードが1枚もない場合のフォールバック＆注意喚起
       const fallbackItems = masterItems.filter(item => selectedSimCategories.has(item.category || detectCategory(item.code)));
       if (fallbackItems.length > 0) {
         fallbackItems.forEach(item => availableDeck.push(item.code));
@@ -2597,7 +2450,7 @@
     extraShipScans = [];
     currentPhase = 'picking';
     lastCode = null;
-    document.getElementById('lastScannedText').textContent = '---';
+    setReadoutState('---', false);
     document.getElementById('boardHeaderTitle').textContent =
       `出荷指示リスト（対象: ${catLabelStr} ｜ 印刷済 ${printedKindsCount}種・総保有 ${availableDeck.length}枚以内）`;
 
@@ -2615,7 +2468,7 @@
     if (currentPhase === 'picking') {
       currentPhase = 'shipping';
       lastCode = null;
-      document.getElementById('lastScannedText').textContent = '---';
+      setReadoutState('---', false);
       playTone(1600, 0.15);
     } else if (currentPhase === 'shipping') {
       currentPhase = 'result';
@@ -2702,7 +2555,7 @@
   }
 
   /* ============================================================================
-     6. スキャン処理（通常スキャン ＆ 分割マスターQR同期受信）
+     6. スキャン処理（指示書照合・エラー時赤表示＆ウィンドウ赤フラッシュ）
      ============================================================================ */
   function toggleSyncScanMode() {
     if (currentPhase === 'sync') {
@@ -2713,7 +2566,7 @@
       syncTotalChunks = 0;
       syncReceivedChunks = {};
       lastCode = null;
-      document.getElementById('lastScannedText').textContent = '同期待機中';
+      setReadoutState('同期待機中', false);
       updatePhaseUI();
       renderBoard();
     }
@@ -2732,6 +2585,8 @@
 
   function handleSyncQrPayload(code) {
     if (!code.startsWith('SYNC|')) {
+      setReadoutState(`[同期対象外] ${code}`, true);
+      triggerWindowErrorFlash();
       document.getElementById('scanStatusMsg').textContent = '⚠️ これは通常の現品票です。引き継ぎ用QRをかざしてください';
       return;
     }
@@ -2742,6 +2597,9 @@
     const idx = parseInt(idxStr, 10);
     const total = parseInt(totalStr, 10);
     if (!idx || !total || idx < 1 || idx > total) return;
+
+    setReadoutState(parts[1], false);
+    document.getElementById('scanStatusMsg').textContent = '同期QR読み取り完了（次のQRをかざしてください）';
 
     if (syncTotalChunks !== total) {
       syncTotalChunks = total;
@@ -2793,21 +2651,36 @@
       return;
     }
     if (currentPhase === 'result') return;
-    if (code.startsWith('SYNC|')) return;
+    if (code.startsWith('SYNC|')) {
+      setReadoutState(`[同期QR] ${code.split('|')[1] || ''}`, true);
+      triggerWindowErrorFlash();
+      document.getElementById('scanStatusMsg').textContent = '⚠️ 同期用QRです。現品票のQRをかざしてください';
+      return;
+    }
 
     if (currentPhase === 'picking') {
       const slot = orderSlots.find(s => s.target === code && !s.picked);
       if (slot) {
         slot.picked = true;
+        setReadoutState(code, false);
+        document.getElementById('scanStatusMsg').textContent = '読み取り完了（次のカードは一度離してから）';
       } else {
         extraPickScans.push(code);
+        setReadoutState(`[指示外] ${code}`, true);
+        triggerWindowErrorFlash();
+        document.getElementById('scanStatusMsg').textContent = '⚠️ 指示書にない現品票（または数量オーバー）です！';
       }
     } else if (currentPhase === 'shipping') {
       const slot = orderSlots.find(s => s.target === code && !s.shipped);
       if (slot) {
         slot.shipped = true;
+        setReadoutState(code, false);
+        document.getElementById('scanStatusMsg').textContent = '読み取り完了（次のカードは一度離してから）';
       } else {
         extraShipScans.push(code);
+        setReadoutState(`[指示外] ${code}`, true);
+        triggerWindowErrorFlash();
+        document.getElementById('scanStatusMsg').textContent = '⚠️ 指示書にない現品票（または数量オーバー）です！';
       }
     }
 
@@ -2900,40 +2773,27 @@
       body.appendChild(card);
     });
 
-    if (extraPickScans.length > 0 || extraShipScans.length > 0) {
-      const extraBox = document.createElement('div');
-      extraBox.className = 'extra-scans-area';
-      extraBox.style.display = 'block';
-
-      let html = `<div class="extra-scans-title">⚠️ 指示外・過剰スキャンされた現品票（誤ピッキング / 数量オーバー）</div><div class="extra-scans-list">`;
-      extraPickScans.forEach(c => {
-        html += `<span class="extra-chip">[工程1:在庫] ${c}</span>`;
-      });
-      extraShipScans.forEach(c => {
-        html += `<span class="extra-chip">[工程2:出荷] ${c}</span>`;
-      });
-      html += `</div>`;
-      extraBox.innerHTML = html;
-      body.appendChild(extraBox);
-    }
-
     const summary = document.getElementById('progressSummary');
     if (currentPhase === 'result') {
-      const totalErrors = (orderSlots.length - perfectCount) + extraPickScans.length + extraShipScans.length;
+      const extraCount = extraPickScans.length + extraShipScans.length;
+      const totalErrors = (orderSlots.length - perfectCount) + extraCount;
       const timeNote = (isTimerModeVisible || timerElapsedMs > 0)
         ? ` ｜ ⏱️ 所要時間: ${formatElapsedTime(timerElapsedMs)}`
         : '';
+      const extraNote = extraCount > 0 ? `（うち指示外誤読 ${extraCount} 件）` : '';
       summary.innerHTML = totalErrors === 0
         ? `<span style="color:var(--success);">全 ${orderSlots.length} 件 完全一致（ミス 0 件）${timeNote}</span>`
-        : `<span style="color:var(--danger);">一致: ${perfectCount} / ${orderSlots.length} 件（不備・誤読: ${totalErrors} 件）${timeNote}</span>`;
+        : `<span style="color:var(--danger);">一致: ${perfectCount} / ${orderSlots.length} 件（不備・誤読: ${totalErrors} 件${extraNote}）${timeNote}</span>`;
     } else {
       summary.textContent = `1.ピッキング: ${pickCount}/${orderSlots.length} ｜ 2.出荷検品: ${shipCount}/${orderSlots.length}`;
     }
   }
 
   /* ============================================================================
-     7. カメラ＆ビープ音制御（iPadインライン強制再生対応）
+     7. カメラ＆ビープ音制御（外付けUSBカメラ確実認識・自動優先・抜き差し監視）
      ============================================================================ */
+  let userExplicitlySelectedCamera = false;
+
   function playTone(freq = 2400, duration = 0.12) {
     if (!document.getElementById('soundCheck').checked) return;
     try {
@@ -2955,7 +2815,48 @@
     video.classList.toggle('mirrored', document.getElementById('mirrorCheck').checked);
   }
 
-  async function populateCameras() {
+  function isBuiltInCameraLabel(label) {
+    if (!label) return false;
+    return /integrated|built-in|facetime|front|rear|back|ir camera|windows hello|内蔵/i.test(label);
+  }
+
+  function findPreferredExternalDevice(videoDevices) {
+    if (!videoDevices || videoDevices.length === 0) return null;
+
+    try {
+      const savedId = localStorage.getItem(STORAGE_KEY_PREFERRED_CAM);
+      if (savedId) {
+        const matchedSaved = videoDevices.find(d => d.deviceId === savedId);
+        if (matchedSaved) return matchedSaved;
+      }
+    } catch (e) {}
+
+    if (videoDevices.length > 1) {
+      const external = videoDevices.find(d => d.label && !isBuiltInCameraLabel(d.label));
+      if (external) return external;
+      return videoDevices[videoDevices.length - 1];
+    }
+
+    return videoDevices[0];
+  }
+
+  function onCameraSelectChange() {
+    userExplicitlySelectedCamera = true;
+    const select = document.getElementById('cameraSelect');
+    if (select && select.value) {
+      try {
+        localStorage.setItem(STORAGE_KEY_PREFERRED_CAM, select.value);
+      } catch (e) {}
+      if (currentStream) {
+        startCamera(false);
+      }
+    }
+  }
+
+  async function populateCameras(autoSelectExternal = true) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+      return [];
+    }
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(d => d.kind === 'videoinput');
@@ -2963,57 +2864,145 @@
       const prev = select.value;
       select.innerHTML = '';
 
+      if (videoDevices.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.text = 'カメラ未検出（接続確認）';
+        select.appendChild(opt);
+        return [];
+      }
+
       videoDevices.forEach((dev, idx) => {
         const opt = document.createElement('option');
         opt.value = dev.deviceId;
-        opt.text = dev.label || `カメラ ${idx + 1}`;
+        const isExt = dev.label && !isBuiltInCameraLabel(dev.label);
+        const baseName = dev.label || `カメラ ${idx + 1}（起動後に名称取得）`;
+        opt.text = isExt ? `[外付け] ${baseName}` : baseName;
         select.appendChild(opt);
       });
 
-      if (prev && videoDevices.some(d => d.deviceId === prev)) {
+      if (!autoSelectExternal && prev && videoDevices.some(d => d.deviceId === prev)) {
         select.value = prev;
-      } else if (videoDevices.length > 1) {
-        const ext = videoDevices.find(d => !/integrated|built-in|facetime/i.test(d.label));
-        if (ext) select.value = ext.deviceId;
+      } else {
+        const preferred = findPreferredExternalDevice(videoDevices);
+        if (preferred) {
+          select.value = preferred.deviceId;
+        }
       }
-    } catch (e) {}
+      return videoDevices;
+    } catch (e) {
+      return [];
+    }
   }
 
-  async function startCamera() {
+  async function refreshCameraList(showStatus = false) {
+    userExplicitlySelectedCamera = false;
+    const devs = await populateCameras(true);
+    if (showStatus) {
+      if (devs.length === 0) {
+        document.getElementById('scanStatusMsg').textContent = '⚠️ カメラが見つかりません。USB接続と他アプリ終了を確認してください';
+      } else {
+        document.getElementById('scanStatusMsg').textContent = `${devs.length}台のカメラを検出しました。「カメラ起動」を押してください`;
+      }
+    }
+  }
+
+  async function openStreamWithFallback(deviceId) {
+    const candidates = [];
+    if (deviceId) {
+      candidates.push({ audio: false, video: { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } } });
+      candidates.push({ audio: false, video: { deviceId: { exact: deviceId } } });
+    }
+    candidates.push({ audio: false, video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } });
+    candidates.push({ audio: false, video: true });
+
+    let lastErr = null;
+    for (const c of candidates) {
+      try {
+        return await navigator.mediaDevices.getUserMedia(c);
+      } catch (err) {
+        lastErr = err;
+        if (err && (err.name === 'NotAllowedError' || err.name === 'NotReadableError')) {
+          throw err;
+        }
+      }
+    }
+    throw lastErr || new Error('カメラを開けませんでした');
+  }
+
+  async function startCamera(allowAutoSwitchToExternal = true) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      document.getElementById('scanStatusMsg').textContent = '⚠️ このブラウザまたは開き方ではカメラAPIを利用できません';
+      return;
+    }
+
     if (currentStream) {
       currentStream.getTracks().forEach(t => t.stop());
+      currentStream = null;
     }
     if (scanLoopId) {
       cancelAnimationFrame(scanLoopId);
+      scanLoopId = null;
     }
 
     enforceInlineVideo(video);
-
     const select = document.getElementById('cameraSelect');
-    const deviceId = select.value;
-    const constraints = {
-      audio: false,
-      video: deviceId
-        ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-        : { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-    };
+    const requestedDeviceId = select.value;
 
     try {
-      currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+      document.getElementById('scanStatusMsg').textContent = 'カメラ接続中...';
+      currentStream = await openStreamWithFallback(requestedDeviceId);
+
+      const videoDevices = await populateCameras(false);
+      const activeTrack = currentStream.getVideoTracks()[0];
+      const activeSettings = activeTrack ? activeTrack.getSettings() : {};
+      const activeDeviceId = activeSettings.deviceId || '';
+
+      if (allowAutoSwitchToExternal && !userExplicitlySelectedCamera && videoDevices.length > 1) {
+        const preferredExt = findPreferredExternalDevice(videoDevices);
+        if (preferredExt && preferredExt.deviceId && preferredExt.deviceId !== activeDeviceId) {
+          currentStream.getTracks().forEach(t => t.stop());
+          currentStream = await openStreamWithFallback(preferredExt.deviceId);
+          select.value = preferredExt.deviceId;
+          try {
+            localStorage.setItem(STORAGE_KEY_PREFERRED_CAM, preferredExt.deviceId);
+          } catch (e) {}
+        }
+      }
+
+      const finalTrack = currentStream.getVideoTracks()[0];
+      const finalDeviceId = finalTrack ? finalTrack.getSettings().deviceId : '';
+      if (finalDeviceId && Array.from(select.options).some(o => o.value === finalDeviceId)) {
+        select.value = finalDeviceId;
+      }
+
       enforceInlineVideo(video);
       video.srcObject = currentStream;
       await video.play().catch(() => {});
 
-      await populateCameras();
-      if (!select.value && currentStream.getVideoTracks()[0]) {
-        const st = currentStream.getVideoTracks()[0].getSettings();
-        if (st.deviceId) select.value = st.deviceId;
-      }
-      document.getElementById('scanStatusMsg').textContent = 'スキャン待機中：中央枠にQRをかざしてください';
+      const activeLabel = finalTrack ? finalTrack.label : 'カメラ';
+      document.getElementById('scanStatusMsg').textContent = `稼働中 (${activeLabel})：枠にQRをかざしてください`;
       scanLoop();
     } catch (err) {
-      document.getElementById('scanStatusMsg').textContent = `カメラ起動エラー: ${err.message}`;
+      let msg = `カメラ起動エラー: ${err.message}`;
+      if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        msg = '⚠️ 外付けカメラが他のアプリ（Windowsカメラ・Zoom等）で使用中です。他アプリを閉じて再度押してください';
+      } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        msg = '⚠️ ブラウザでカメラ使用がブロックされています。アドレスバーのカメラアイコンから「許可」してください';
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        msg = '⚠️ カメラが認識されません。USBケーブルの接続を確認し「🔄再検出」を押してください';
+      }
+      document.getElementById('scanStatusMsg').textContent = msg;
     }
+  }
+
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+    navigator.mediaDevices.addEventListener('devicechange', async () => {
+      const devs = await populateCameras(!userExplicitlySelectedCamera);
+      if (!currentStream && devs.length > 0) {
+        document.getElementById('scanStatusMsg').textContent = `カメラ接続を検知（${devs.length}台）：「カメラ起動」を押してください`;
+      }
+    });
   }
 
   function scanLoop() {
@@ -3041,9 +3030,6 @@
             playTone(2400, 0.12);
 
             scanReticle.classList.add('scanned');
-            document.getElementById('lastScannedText').textContent = decoded.startsWith('SYNC|') ? decoded.split('|')[1] : decoded;
-            document.getElementById('scanStatusMsg').textContent = '読み取り完了（次のカードは一度離してから）';
-
             processScannedPart(decoded);
 
             setTimeout(() => {
@@ -3580,7 +3566,7 @@
     } catch (e) {}
 
     updateSimCategoryChipUI();
-    await populateCameras();
+    await populateCameras(true);
     resetSimulation();
   };
 </script>

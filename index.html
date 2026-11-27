@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ピッキング＆出荷実技シミュレーター（系統選択・外付けカメラ優先・エラー赤フラッシュ対応）</title>
+  <title>ピッキング＆出荷実技シミュレーター（手動枠選択スキャン・実読取対比判定対応）</title>
   <style>
     :root {
       --bg-color: #f1f5f9;
@@ -38,7 +38,7 @@
       color: var(--text);
     }
 
-    /* ================= アイデアA：ウィンドウ全体の赤いフラッシュ発光オーバーレイ ================= */
+    /* ================= ウィンドウ全体の赤いフラッシュ発光オーバーレイ（未発行・読取エラー時のみ） ================= */
     .window-error-flash {
       position: fixed;
       inset: 0;
@@ -292,7 +292,7 @@
     }
 
     .camera-column {
-      width: 390px;
+      width: 380px;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -522,7 +522,7 @@
       overflow-y: auto;
       padding: 10px;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
       gap: 8px;
       align-content: start;
     }
@@ -530,57 +530,109 @@
     .order-slot {
       position: relative;
       border: 1.5px solid #cbd5e1;
-      border-radius: 5px;
+      border-radius: 6px;
       background: #ffffff;
-      padding: 8px 12px;
+      padding: 8px 11px;
       display: flex;
       flex-direction: column;
       gap: 5px;
-      min-height: 62px;
+      min-height: 56px;
       justify-content: center;
+      transition: border-color 0.12s, background-color 0.12s, box-shadow 0.12s;
+    }
+
+    .order-slot.selectable {
+      cursor: pointer;
+    }
+
+    .order-slot.selectable:hover {
+      border-color: #64748b;
+      background: #f8fafc;
+    }
+
+    /* 手動クリック・タップで選択中の対象枠（工程1・工程2共通） */
+    .order-slot.selected-target {
+      border: 2.5px solid #2563eb;
+      background: #eff6ff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
+    }
+
+    .order-slot.selected-target.shipping-mode {
+      border-color: #d97706;
+      background: #fffbeb;
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.22);
     }
 
     .order-slot-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+      min-width: 0;
     }
 
     .slot-index {
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       font-weight: 700;
       color: #64748b;
       background: #f1f5f9;
       padding: 2px 6px;
       border-radius: 3px;
+      flex-shrink: 0;
     }
 
+    .order-slot.selected-target .slot-index {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .order-slot.selected-target.shipping-mode .slot-index {
+      background: #d97706;
+      color: #ffffff;
+    }
+
+    /* 部番は常に1行表示（折り返し禁止） */
     .slot-target-no {
       font-family: var(--label-font);
       font-feature-settings: "zero" 1;
-      font-size: 1.08rem;
+      font-size: 1.06rem;
       font-weight: 700;
       color: #0f172a;
       flex: 1;
-      word-break: break-all;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .stage-badges {
       display: flex;
-      gap: 6px;
+      gap: 4px;
       align-items: center;
       flex-shrink: 0;
     }
 
     .badge-stage {
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       font-weight: 700;
-      padding: 3px 7px;
+      padding: 2px 6px;
       border-radius: 4px;
       border: 1px solid #cbd5e1;
       background: #f8fafc;
       color: #94a3b8;
+      white-space: nowrap;
+    }
+
+    .badge-stage.target-active {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: #ffffff;
+    }
+
+    .badge-stage.target-active-ship {
+      background: #d97706;
+      border-color: #d97706;
+      color: #ffffff;
     }
 
     .badge-stage.done-pick {
@@ -608,18 +660,40 @@
     .judge-mark {
       font-size: 1.25rem;
       font-weight: 900;
+      flex-shrink: 0;
     }
     .order-slot.correct .judge-mark { color: var(--success); }
     .order-slot.wrong .judge-mark { color: var(--danger); }
 
-    .error-detail {
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--danger);
+    /* 最終判定時、誤り枠のみに表示する「正解 vs 実際に読み取ったカード」対比表示 */
+    .slot-compare-box {
       font-family: var(--label-font);
       font-feature-settings: "zero" 1;
+      font-size: 0.77rem;
+      font-weight: 700;
       border-top: 1px dashed #fca5a5;
       padding-top: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      color: #7f1d1d;
+    }
+
+    .compare-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .compare-label-ok {
+      color: var(--success);
+      font-weight: 800;
+    }
+
+    .compare-label-ng {
+      color: var(--danger);
+      font-weight: 800;
     }
 
     /* ================= マスターQR同期パネル（他PC読込用） ================= */
@@ -1057,16 +1131,27 @@
     }
 
     /* ============================================================================
-       レスポンシブ最適化（PC幅1025px以上は完全維持、タブレット・スマホ縦横両対応）
+       レスポンシブ最適化（タブレット横画面で出荷指示書の部番を必ず1行表示に最適化）
        ============================================================================ */
-    @media screen and (max-width: 1024px) and (orientation: landscape) {
+    @media screen and (max-width: 1180px) and (orientation: landscape) {
       .app-shell { padding: 6px 10px; gap: 6px; }
-      header { padding: 6px 10px; }
-      .header-left h1 { font-size: 0.92rem; }
-      .camera-column { width: 340px; }
-      .scan-reticle { width: 160px; height: 160px; }
-      .board-body { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-      .master-sidebar { width: 360px; }
+      header { padding: 5px 10px; }
+      .header-left h1 { font-size: 0.9rem; }
+      .camera-column { width: 295px; }
+      .scan-reticle { width: 150px; height: 150px; }
+      .board-body {
+        grid-template-columns: repeat(auto-fit, minmax(275px, 1fr));
+        gap: 6px;
+        padding: 8px;
+      }
+      .order-slot {
+        padding: 7px 9px;
+      }
+      .slot-target-no {
+        font-size: clamp(0.84rem, 1.35vw, 0.98rem);
+        white-space: nowrap;
+      }
+      .master-sidebar { width: 350px; }
     }
 
     @media screen and (max-width: 1024px) and (orientation: portrait),
@@ -1115,7 +1200,7 @@
       .video-box { height: 230px; }
       .scan-reticle { width: 155px; height: 155px; }
       .cat-count-grid { grid-template-columns: repeat(2, 1fr); }
-      .slot-target-no { font-size: 0.98rem; }
+      .slot-target-no { font-size: 0.95rem; }
     }
 
     @media print {
@@ -1140,7 +1225,7 @@
 </head>
 <body>
 
-<!-- ウィンドウ全体の赤いフラッシュ発光オーバーレイ（アイデアA） -->
+<!-- ウィンドウ全体の赤いフラッシュ発光オーバーレイ（未発行カード・読取エラー時のみ発動） -->
 <div class="window-error-flash" id="windowErrorFlash"></div>
 
 <div class="app-shell">
@@ -1199,7 +1284,7 @@
           <span id="phaseTitleText">【工程1】ピッキング・スキャン</span>
           <span id="phaseStepBadge">STEP 1 / 2</span>
         </div>
-        <div class="phase-sub" id="phaseSubText">指示された現品票を探し、カメラにかざして在庫スキャンしてください</div>
+        <div class="phase-sub" id="phaseSubText">右の指示枠をタップして選択してから、現品票のQRをかざしてください</div>
       </div>
 
       <div class="camera-card">
@@ -1243,8 +1328,8 @@
 
     <div class="board-column">
       <div class="board-header">
-        <span id="boardHeaderTitle">出荷指示リスト（選択系統の印刷済保有枚数以内から出題）</span>
-        <span id="progressSummary">ピッキング: 0/10 ｜ 出荷検品: 0/10</span>
+        <span id="boardHeaderTitle">出荷指示リスト（スキャンしたい枠をタップして選択）</span>
+        <span id="progressSummary">1.ピッキング 入力済: 0 / 10</span>
       </div>
       <div class="unprinted-alert-bar" id="unprintedAlertBar">
         <span id="unprintedAlertText">⚠️ 未印刷のマスター部品があります（未印刷の部品は出題対象から除外されています）</span>
@@ -2213,9 +2298,9 @@
 
   let currentPhase = 'picking';
   let prevPhaseBeforeSync = 'picking';
+  // { target, pickedCode: null | string, shippedCode: null | string }
   let orderSlots = [];
-  let extraPickScans = [];
-  let extraShipScans = [];
+  let selectedSlotIndex = null; // 工程1・工程2ともにまっさらな未選択状態から手動タップで選択
 
   let syncTotalChunks = 0;
   let syncReceivedChunks = {};
@@ -2241,13 +2326,17 @@
   let lastCode = null;
   let noCodeFrames = 0;
 
+  // 2重スキャン防止パラメータ：クールダウン1.5秒＆完全離脱判定24フレーム
+  const SCAN_COOLDOWN_MS = 1500;
+  const NO_CODE_RESET_FRAMES = 24;
+
   function triggerWindowErrorFlash() {
     if (!windowErrorFlashEl) return;
     if (errorFlashTimerId) {
       clearTimeout(errorFlashTimerId);
     }
     windowErrorFlashEl.classList.remove('active');
-    void windowErrorFlashEl.offsetWidth; // リフローして連続エラー時も再発光させる
+    void windowErrorFlashEl.offsetWidth;
     windowErrorFlashEl.classList.add('active');
     errorFlashTimerId = setTimeout(() => {
       windowErrorFlashEl.classList.remove('active');
@@ -2259,6 +2348,13 @@
     lastScannedTextEl.textContent = text;
     lastScannedTextEl.classList.toggle('is-error', isError);
     scanReadoutBox.classList.toggle('is-error', isError);
+  }
+
+  function isUnissuedOrInvalidCode(code) {
+    if (!code || typeof code !== 'string') return true;
+    if (/[#!?$%^&*+=~`|\\<>{}\[\];:'",]/.test(code)) return true;
+    const existsInMaster = masterItems.some(m => m.code === code);
+    return !existsInMaster;
   }
 
   function enforceInlineVideo(v) {
@@ -2441,21 +2537,32 @@
     for (let i = 0; i < actualCount; i++) {
       orderSlots.push({
         target: availableDeck[i],
-        picked: false,
-        shipped: false
+        pickedCode: null,
+        shippedCode: null
       });
     }
 
-    extraPickScans = [];
-    extraShipScans = [];
+    // まっさらな未選択状態（null）からスタート
+    selectedSlotIndex = null;
     currentPhase = 'picking';
     lastCode = null;
     setReadoutState('---', false);
     document.getElementById('boardHeaderTitle').textContent =
-      `出荷指示リスト（対象: ${catLabelStr} ｜ 印刷済 ${printedKindsCount}種・総保有 ${availableDeck.length}枚以内）`;
+      `出荷指示リスト（対象: ${catLabelStr} ｜ 枠をタップしてスキャン対象を選択）`;
 
     updateUnprintedAlertBar();
     updatePhaseUI();
+    renderBoard();
+  }
+
+  function selectTargetSlot(idx) {
+    if (currentPhase !== 'picking' && currentPhase !== 'shipping') return;
+    if (selectedSlotIndex === idx) {
+      selectedSlotIndex = null;
+    } else {
+      selectedSlotIndex = idx;
+    }
+    lastCode = null;
     renderBoard();
   }
 
@@ -2467,14 +2574,20 @@
 
     if (currentPhase === 'picking') {
       currentPhase = 'shipping';
+      selectedSlotIndex = null; // 工程2もまっさらな未選択状態からスタート
       lastCode = null;
       setReadoutState('---', false);
+      document.getElementById('boardHeaderTitle').textContent =
+        `出荷指示リスト（工程2：枠をタップしてスキャン対象を選択）`;
       playTone(1600, 0.15);
     } else if (currentPhase === 'shipping') {
       currentPhase = 'result';
+      selectedSlotIndex = null;
       if (timerRunning) {
         stopTimer();
       }
+      document.getElementById('boardHeaderTitle').textContent =
+        `出荷指示リスト（照合判定結果）`;
       playTone(2000, 0.25);
     } else if (currentPhase === 'result') {
       resetSimulation();
@@ -2531,7 +2644,7 @@
       banner.classList.add('phase-picking');
       title.textContent = '【工程1】ピッキング・スキャン（在庫引当）';
       badge.textContent = 'STEP 1 / 2';
-      sub.textContent = '指示された現品票を探し、カメラにかざして1枚ずつスキャンしてください';
+      sub.textContent = '右の出荷指示枠をタップして選択してから、現品票のQRをかざしてください';
       btn.style.background = 'var(--primary)';
       btn.textContent = '台車で出荷場へ移動 → 出荷スキャンへ切替';
       hint.textContent = '出荷場所へ移動したら上のボタン（または [Space] / [Enter] キー）で出荷モードへ切替';
@@ -2539,10 +2652,10 @@
       banner.classList.add('phase-shipping');
       title.textContent = '【工程2】出荷引き渡し・再スキャン（出荷検品）';
       badge.textContent = 'STEP 2 / 2';
-      sub.textContent = '引き渡す現品票を再度1枚ずつカメラにかざして出荷検品してください';
+      sub.textContent = '右の出荷指示枠をタップして選択してから、再度QRをかざして出荷検品してください';
       btn.style.background = 'var(--shipping)';
       btn.textContent = '出荷スキャン完了 → 照合判定を実行';
-      hint.textContent = '全枚数スキャン後、上のボタン（または [Space] / [Enter] キー）で正誤判定を表示';
+      hint.textContent = '全枠スキャン後、上のボタン（または [Space] / [Enter] キー）で正誤判定を表示';
     } else {
       banner.classList.add('phase-result');
       title.textContent = '【照合判定完了】ピッキング＆出荷検品結果';
@@ -2555,7 +2668,7 @@
   }
 
   /* ============================================================================
-     6. スキャン処理（指示書照合・エラー時赤表示＆ウィンドウ赤フラッシュ）
+     6. スキャン処理（工程1・工程2共通：手動枠選択方式 ／ 最終判定で正解vs実読取表示）
      ============================================================================ */
   function toggleSyncScanMode() {
     if (currentPhase === 'sync') {
@@ -2563,6 +2676,7 @@
     } else {
       prevPhaseBeforeSync = currentPhase;
       currentPhase = 'sync';
+      selectedSlotIndex = null;
       syncTotalChunks = 0;
       syncReceivedChunks = {};
       lastCode = null;
@@ -2592,11 +2706,20 @@
     }
 
     const parts = code.split('|');
-    if (parts.length !== 3) return;
+    if (parts.length !== 3) {
+      setReadoutState(`[読取エラー] ${code}`, true);
+      triggerWindowErrorFlash();
+      document.getElementById('scanStatusMsg').textContent = '⚠️ QRコードの読み取りに失敗しました。再度かざしてください';
+      return;
+    }
     const [idxStr, totalStr] = parts[1].split('/');
     const idx = parseInt(idxStr, 10);
     const total = parseInt(totalStr, 10);
-    if (!idx || !total || idx < 1 || idx > total) return;
+    if (!idx || !total || idx < 1 || idx > total) {
+      setReadoutState(`[読取エラー] ${code}`, true);
+      triggerWindowErrorFlash();
+      return;
+    }
 
     setReadoutState(parts[1], false);
     document.getElementById('scanStatusMsg').textContent = '同期QR読み取り完了（次のQRをかざしてください）';
@@ -2651,39 +2774,36 @@
       return;
     }
     if (currentPhase === 'result') return;
-    if (code.startsWith('SYNC|')) {
-      setReadoutState(`[同期QR] ${code.split('|')[1] || ''}`, true);
+
+    // 1. 同期用QRの誤読、または未発行カード・文字化け（#や!等）の読み取りエラーのみ赤表示＆赤フラッシュ
+    if (code.startsWith('SYNC|') || isUnissuedOrInvalidCode(code)) {
+      setReadoutState(`[未発行/エラー] ${code}`, true);
       triggerWindowErrorFlash();
-      document.getElementById('scanStatusMsg').textContent = '⚠️ 同期用QRです。現品票のQRをかざしてください';
+      document.getElementById('scanStatusMsg').textContent = '⚠️ 未発行カードまたはQR読み取りエラーです！';
       return;
     }
 
-    if (currentPhase === 'picking') {
-      const slot = orderSlots.find(s => s.target === code && !s.picked);
-      if (slot) {
-        slot.picked = true;
-        setReadoutState(code, false);
-        document.getElementById('scanStatusMsg').textContent = '読み取り完了（次のカードは一度離してから）';
-      } else {
-        extraPickScans.push(code);
-        setReadoutState(`[指示外] ${code}`, true);
-        triggerWindowErrorFlash();
-        document.getElementById('scanStatusMsg').textContent = '⚠️ 指示書にない現品票（または数量オーバー）です！';
-      }
-    } else if (currentPhase === 'shipping') {
-      const slot = orderSlots.find(s => s.target === code && !s.shipped);
-      if (slot) {
-        slot.shipped = true;
-        setReadoutState(code, false);
-        document.getElementById('scanStatusMsg').textContent = '読み取り完了（次のカードは一度離してから）';
-      } else {
-        extraShipScans.push(code);
-        setReadoutState(`[指示外] ${code}`, true);
-        triggerWindowErrorFlash();
-        document.getElementById('scanStatusMsg').textContent = '⚠️ 指示書にない現品票（または数量オーバー）です！';
-      }
+    // 2. スキャン対象枠が未選択の場合は、指示枠のタップを促す
+    if (selectedSlotIndex === null || !orderSlots[selectedSlotIndex]) {
+      setReadoutState(code, false);
+      document.getElementById('scanStatusMsg').textContent = '⚠️ 先に右の出荷指示枠をタップして選択してからスキャンしてください';
+      return;
     }
 
+    // 3. 選択中の枠にスキャンした部番を記録（工程1・工程2共通、正誤は最終判定時まで伏せる）
+    const targetSlot = orderSlots[selectedSlotIndex];
+    const slotNumLabel = `#${String(selectedSlotIndex + 1).padStart(2, '0')}`;
+
+    if (currentPhase === 'picking') {
+      targetSlot.pickedCode = code;
+    } else if (currentPhase === 'shipping') {
+      targetSlot.shippedCode = code;
+    }
+
+    setReadoutState(code, false);
+    document.getElementById('scanStatusMsg').textContent = `${slotNumLabel} にスキャン登録しました（次の枠をタップしてください）`;
+
+    selectedSlotIndex = null;
     renderBoard();
   }
 
@@ -2724,73 +2844,113 @@
       return;
     }
 
-    let pickCount = 0;
-    let shipCount = 0;
+    let pickInputCount = 0;
+    let shipInputCount = 0;
     let perfectCount = 0;
 
     orderSlots.forEach((slot, idx) => {
-      if (slot.picked) pickCount++;
-      if (slot.shipped) shipCount++;
+      if (slot.pickedCode !== null) pickInputCount++;
+      if (slot.shippedCode !== null) shipInputCount++;
 
       const card = document.createElement('div');
-      card.className = 'order-slot';
+      let cls = 'order-slot';
+      const isSelected = (selectedSlotIndex === idx) && (currentPhase === 'picking' || currentPhase === 'shipping');
 
-      const isComplete = slot.picked && slot.shipped;
-      if (currentPhase === 'result') {
-        if (isComplete) {
-          card.classList.add('correct');
-          perfectCount++;
-        } else {
-          card.classList.add('wrong');
+      if (currentPhase === 'picking' || currentPhase === 'shipping') {
+        cls += ' selectable';
+        if (isSelected) {
+          cls += ' selected-target';
+          if (currentPhase === 'shipping') cls += ' shipping-mode';
         }
+        card.onclick = () => selectTargetSlot(idx);
       }
 
+      const isPickCorrect = (slot.pickedCode === slot.target);
+      const isShipCorrect = (slot.shippedCode === slot.target);
+      const isComplete = isPickCorrect && isShipCorrect;
+
+      let badgesHtml = '';
       let statusHtml = '';
-      if (currentPhase === 'result') {
+      let compareHtml = '';
+
+      if (currentPhase === 'picking') {
+        if (isSelected) {
+          badgesHtml = `<div class="stage-badges"><span class="badge-stage target-active">◀ 読取対象</span></div>`;
+        } else if (slot.pickedCode !== null) {
+          badgesHtml = `<div class="stage-badges"><span class="badge-stage done-pick">1.在庫: 入力済</span></div>`;
+        } else {
+          badgesHtml = `<div class="stage-badges"><span class="badge-stage">未選択</span></div>`;
+        }
+      } else if (currentPhase === 'shipping') {
+        if (isSelected) {
+          badgesHtml = `<div class="stage-badges"><span class="badge-stage target-active-ship">◀ 読取対象</span></div>`;
+        } else if (slot.shippedCode !== null) {
+          badgesHtml = `<div class="stage-badges"><span class="badge-stage done-ship">2.出荷: 入力済</span></div>`;
+        } else {
+          badgesHtml = `<div class="stage-badges"><span class="badge-stage">未選択</span></div>`;
+        }
+      } else if (currentPhase === 'result') {
+        if (isComplete) {
+          cls += ' correct';
+          perfectCount++;
+        } else {
+          cls += ' wrong';
+          const pickActualText = slot.pickedCode !== null ? slot.pickedCode : '未スキャン';
+          const shipActualText = slot.shippedCode !== null ? slot.shippedCode : '未スキャン';
+          compareHtml = `
+            <div class="slot-compare-box">
+              <div class="compare-row">
+                <span class="compare-label-ok">正解カード: ${slot.target}</span>
+              </div>
+              <div class="compare-row">
+                <span class="${isPickCorrect ? 'compare-label-ok' : 'compare-label-ng'}">1.在庫読取: ${pickActualText}（${isPickCorrect ? '〇' : '✕'}）</span>
+                <span>／</span>
+                <span class="${isShipCorrect ? 'compare-label-ok' : 'compare-label-ng'}">2.出荷読取: ${shipActualText}（${isShipCorrect ? '〇' : '✕'}）</span>
+              </div>
+            </div>
+          `;
+        }
+
+        badgesHtml = `
+          <div class="stage-badges">
+            <span class="badge-stage ${isPickCorrect ? 'done-pick' : ''}">1.在庫${slot.pickedCode !== null ? (isPickCorrect ? '〇' : '✕') : '未'}</span>
+            <span class="badge-stage ${isShipCorrect ? 'done-ship' : ''}">2.出荷${slot.shippedCode !== null ? (isShipCorrect ? '〇' : '✕') : '未'}</span>
+          </div>
+        `;
         statusHtml = `<span class="judge-mark">${isComplete ? '〇' : '✕'}</span>`;
       }
 
-      let errorReason = '';
-      if (currentPhase === 'result' && !isComplete) {
-        const missing = [];
-        if (!slot.picked) missing.push('ピッキング未スキャン');
-        if (!slot.shipped) missing.push('出荷再スキャン漏れ');
-        errorReason = `<div class="error-detail">不備: ${missing.join(' / ')} ｜ 正解部番: ${slot.target}</div>`;
-      }
-
+      card.className = cls;
       card.innerHTML = `
         <div class="order-slot-top">
           <span class="slot-index">#${String(idx + 1).padStart(2, '0')}</span>
-          <span class="slot-target-no">${slot.target}</span>
-          <div class="stage-badges">
-            <span class="badge-stage ${slot.picked ? 'done-pick' : ''}">1.在庫${slot.picked ? '済' : '未'}</span>
-            <span class="badge-stage ${slot.shipped ? 'done-ship' : ''}">2.出荷${slot.shipped ? '済' : '未'}</span>
-          </div>
+          <span class="slot-target-no" title="${slot.target}">${slot.target}</span>
+          ${badgesHtml}
           ${statusHtml}
         </div>
-        ${errorReason}
+        ${compareHtml}
       `;
       body.appendChild(card);
     });
 
     const summary = document.getElementById('progressSummary');
     if (currentPhase === 'result') {
-      const extraCount = extraPickScans.length + extraShipScans.length;
-      const totalErrors = (orderSlots.length - perfectCount) + extraCount;
+      const totalErrors = orderSlots.length - perfectCount;
       const timeNote = (isTimerModeVisible || timerElapsedMs > 0)
         ? ` ｜ ⏱️ 所要時間: ${formatElapsedTime(timerElapsedMs)}`
         : '';
-      const extraNote = extraCount > 0 ? `（うち指示外誤読 ${extraCount} 件）` : '';
       summary.innerHTML = totalErrors === 0
         ? `<span style="color:var(--success);">全 ${orderSlots.length} 件 完全一致（ミス 0 件）${timeNote}</span>`
-        : `<span style="color:var(--danger);">一致: ${perfectCount} / ${orderSlots.length} 件（不備・誤読: ${totalErrors} 件${extraNote}）${timeNote}</span>`;
+        : `<span style="color:var(--danger);">一致: ${perfectCount} / ${orderSlots.length} 件（不備・誤読: ${totalErrors} 件）${timeNote}</span>`;
+    } else if (currentPhase === 'picking') {
+      summary.textContent = `1.ピッキング 入力済: ${pickInputCount} / ${orderSlots.length}`;
     } else {
-      summary.textContent = `1.ピッキング: ${pickCount}/${orderSlots.length} ｜ 2.出荷検品: ${shipCount}/${orderSlots.length}`;
+      summary.textContent = `1.在庫: ${pickInputCount}/${orderSlots.length} ｜ 2.出荷 入力済: ${shipInputCount}/${orderSlots.length}`;
     }
   }
 
   /* ============================================================================
-     7. カメラ＆ビープ音制御（外付けUSBカメラ確実認識・自動優先・抜き差し監視）
+     7. カメラ＆ビープ音制御（外付けUSBカメラ確実認識・2重スキャン防止強化）
      ============================================================================ */
   let userExplicitlySelectedCamera = false;
 
@@ -2981,7 +3141,7 @@
       await video.play().catch(() => {});
 
       const activeLabel = finalTrack ? finalTrack.label : 'カメラ';
-      document.getElementById('scanStatusMsg').textContent = `稼働中 (${activeLabel})：枠にQRをかざしてください`;
+      document.getElementById('scanStatusMsg').textContent = `稼働中 (${activeLabel})：枠をタップしてQRをかざしてください`;
       scanLoop();
     } catch (err) {
       let msg = `カメラ起動エラー: ${err.message}`;
@@ -3036,15 +3196,23 @@
               scanReticle.classList.remove('scanned');
               scanReticle.classList.add('cooldown');
               isCooldown = false;
-            }, 600);
+            }, SCAN_COOLDOWN_MS);
           }
         } else {
           noCodeFrames++;
-          if (noCodeFrames > 8) {
+          if (noCodeFrames > NO_CODE_RESET_FRAMES) {
             lastCode = null;
             if (!isCooldown) {
               scanReticle.classList.remove('cooldown');
-              document.getElementById('scanStatusMsg').textContent = 'スキャン待機中：中央枠にQRをかざしてください';
+              if (currentPhase === 'sync') {
+                document.getElementById('scanStatusMsg').textContent = 'スキャン待機中：引き継ぎ用QRをかざしてください';
+              } else if (selectedSlotIndex !== null) {
+                document.getElementById('scanStatusMsg').textContent =
+                  `#${String(selectedSlotIndex + 1).padStart(2, '0')} 選択中：中央枠にQRをかざしてください`;
+              } else {
+                document.getElementById('scanStatusMsg').textContent =
+                  '右の出荷指示枠をタップして選択してからQRをかざしてください';
+              }
             }
           }
         }
